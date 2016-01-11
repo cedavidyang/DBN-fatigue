@@ -1,0 +1,15 @@
+Python wrapper for Netica C API
+This page gives some basic information about the OpenEarthTools Python wrapper for the Netica C API.
+Information about the Netica C API can be found at http://norsys.com/netica_c_api.htm; downloads at available at http://www.norsys.com/downloads/
+The Python wrapper is available in the openearthtools trunk, more specifically at https://svn.oss.deltares.nl/repos/openearthtools/trunk/python/applications/Netica/
+
+Windows
+The .zip file with the Netica C API contains the file Netica.dll
+This .dll file should be copied to the lib directory of the Python Netica package (python/applications/Netica/lib/)
+
+Mac OS X
+The Netica C API for Mac OS X includes a static library only, where a dynamic library is needed for use with the python wrapper. You have to compile it yourself. First run in the src folder of the zip file:
+./compile.sh
+This results in a NeticaEx.o file in the lib folder. Then go to the lib folder and run:
+g++ -shared libnetica.a NeticaEx.o -o libnetica.so
+Copy the resulting libnetica.so to the lib directory of the Python Netica package (python/applications/Netica/lib/)
