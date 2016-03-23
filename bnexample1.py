@@ -96,12 +96,12 @@ optx, dummy = x2.fit_stats('lognormal', x2beliefs, lmd=lmd)
 print 'The mean of {} by fitting cdf is {:f}'.format(x2.name, optx[0])
 print 'The std of {} by fitting cdf is {:f}'.format(x2.name, np.sqrt(optx[1]))
 
-## posterior belief
-#dbnet.enter_finding(x1, 2)
-#beliefs = dbnet.get_node_beliefs(y)
-#print "\nPosterior Belief:"
-#for i in xrange(y.nstates()):
-    #print 'The probability of {} is {:f}'.format(y.statenames[i], beliefs[i])
+# posterior belief
+dbnet.enter_finding(x1, 2)
+beliefs = dbnet.get_node_beliefs(y)
+print "\nPosterior Belief:"
+for i in xrange(y.nstates()):
+    print 'The probability of {} is {:f}'.format(y.statenames[i], beliefs[i])
 
 #dbnet.enter_finding(y, 'init')
 #x1beliefs = dbnet.get_node_beliefs(x1)
