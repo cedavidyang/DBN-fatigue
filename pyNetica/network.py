@@ -62,5 +62,13 @@ class Network(object):
         self.ntc.enterfinding(node.ptr, stateindx)
 
 
+    def retract_nodefindings(self, node):
+        self.ntc.retractnodefindings(node.ptr)
+
+
+    def retract_netfindings(self):
+        self.ntc.retractnetfindings(self.net)
+
+
     def save_net(self, filename):
         self.ntc.savenet(self.env, self.net, filename)
