@@ -328,7 +328,8 @@ class TrancatedRv(object):
             k0 = sgm/np.sqrt(2*np.pi)
             k1 = (u-mu)/sgm/np.sqrt(2)
             k2 = (l-mu)/sgm/np.sqrt(2)
-            mm0 = 0.5*(erf(k1) - erf(k2))
+            #mm0 = 0.5*(erf(k1) - erf(k2))
+            mm0 = stats.norm.cdf(np.sqrt(2)*k1)-stats.norm.cdf(np.sqrt(2)*k2)
             if order == 1:
                 mm = k0*(np.exp(-k2**2)-np.exp(-k1**2))+mu*mm0
             elif order == 2:
@@ -345,7 +346,8 @@ class TrancatedRv(object):
             N = order
             k1 = (np.log(u)-mu)/sgm/np.sqrt(2) - N*sgm/np.sqrt(2)
             k2 = (np.log(l)-mu)/sgm/np.sqrt(2) - N*sgm/np.sqrt(2)
-            mm = 0.5*np.exp(N*mu+N**2*sgm**2/2)*(erf(k1)-erf(k2))
+            d = 2*(stats.norm.cdf(np.sqrt(2)*k1)-stats.norm.cdf(np.sqrt(2)*k2))
+            mm = 0.5*np.exp(N*mu+N**2*sgm**2/2)*d
             mm = mm/dnmntr
         else:
             nsmp = int(nsmp)
