@@ -53,10 +53,10 @@ m5 = Node("M5", parents=[r5], rvname='continuous')
 e = Node("E",parents=[r4,r5], rvname='discrete')
 
 # discretize continuous rv
-r4num = 5
-r5num = 5
-m4num = 6
-m5num = 6
+r4num = 21
+r5num = 21
+m4num = 22
+m5num = 22
 m = r5.rv.stats('m'); s = np.sqrt(r5.rv.stats('v'))
 lb = 0.; ub = m+1.5*s
 r5names = r5.discretize(lb, ub, r5num, infinity='+')
@@ -90,6 +90,8 @@ for i,label in enumerate(labels):
         #prob = prob/(stats.norm.cdf(z5ub)-stats.norm.cdf(z5lb))
         probs.append(prob)
     probs = np.asarray(probs)
+    if np.sum(probs) == 0:
+        probs = np.ones(probs.shape)
     probs = probs/np.sum(probs)
     r4.assign_cpt(probs,label=np.asarray(label),statenames=r4names)
 # node M4
@@ -113,6 +115,8 @@ for i, label in enumerate(labels):
                 stats.norm.cdf(bins[0], loc=rmean, scale=mstd)
         probs.append(prob)
     probs = np.asarray(probs)
+    if np.sum(probs) == 0:
+        probs = np.ones(probs.shape)
     probs = probs/np.sum(probs)
     m4.assign_cpt(probs,label=np.asarray(label),statenames=m4names)
 # node M5
@@ -136,6 +140,8 @@ for i, label in enumerate(labels):
                 stats.norm.cdf(bins[0], loc=rmean, scale=mstd)
         probs.append(prob)
     probs = np.asarray(probs)
+    if np.sum(probs) == 0:
+        probs = np.ones(probs.shape)
     probs = probs/np.sum(probs)
     m5.assign_cpt(probs,label=np.asarray(label),statenames=m5names)
 # node E
@@ -144,7 +150,6 @@ labels = itertools.product(np.arange(r4.nstates()),np.arange(r5.nstates()))
 labels = [label for label in labels]
 allpfs = []
 for i,label in enumerate(labels):
-    print 'labels: {}, progress: {}\%'.format(label, float(i)/len(labels)*100)
     rvs=[]
     for j,pstate in enumerate(label):
         rvs.append(e.parents[j].truncate_rv(pstate))
@@ -154,9 +159,9 @@ for i,label in enumerate(labels):
     probs = np.array([1.-syspf, syspf])
     allpfs.append(syspf)
     e.assign_cpt(probs,label=np.asarray(label),statenames=['safe', 'fail'])
+    print 'labels: {}, progress: {}%, pf: {}'.format(label, float(i)/len(labels)*100, syspf)
 
 # create new network
-import ipdb; ipdb.set_trace() # BREAKPOINT
 dbnet = Network("Straub2010Ex1")
 
 # add nodes to network
@@ -179,7 +184,37 @@ print "Prior Belief:"
 for i in xrange(e.nstates()):
     print 'The probability of {} is {:f}'.format(e.statenames[i], beliefs[i])
 
-# posterior belief
+
+# posterior belief 1
+m4measure = 50; m5measure=100
+m4state = np.searchsorted(m4.bins, m4measure)-1
+if m4state<0: m4state=0
+m5state = np.searchsorted(m5.bins, m5measure)-1
+if m5state<0: m5state=0
+dbnet.enter_finding(m4, m4state)
+dbnet.enter_finding(m5, m5state)
+beliefs = dbnet.get_node_beliefs(e)
+print "\nPosterior Belief:"
+for i in xrange(e.nstates()):
+    print 'Given m4={:.1f} and m5={:.1f}, the probability of {} is {:f}'.format(m4measure, m5measure, e.statenames[i], beliefs[i])
+
+# posterior belief 2
+dbnet.retract_nodefindings(m4)
+#dbnet.retract_netfindings()
+m4measure = 150; m5measure=100
+m4state = np.searchsorted(m4.bins, m4measure)-1
+if m4state<0: m4state=0
+dbnet.enter_finding(m4, m4state)
+#m5state = np.searchsorted(m5.bins, m5measure)-1
+#if m5state<0: m5state=0
+#dbnet.enter_finding(m5, m5state)
+beliefs = dbnet.get_node_beliefs(e)
+print "\nPosterior Belief:"
+for i in xrange(e.nstates()):
+    print 'Given m4={:.1f} and m5={:.1f}, the probability of {} is {:f}'.format(m4measure, m5measure, e.statenames[i], beliefs[i])
+
+# posterior belief 3
+dbnet.retract_netfindings()
 m4measure = 150; m5measure=200
 m4state = np.searchsorted(m4.bins, m4measure)-1
 if m4state<0: m4state=0
