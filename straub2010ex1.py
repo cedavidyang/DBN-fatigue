@@ -47,7 +47,7 @@ print "Prior system reliability is {}".format(stats.norm.ppf(1-syspf))
 # network model
 # create nodes
 r5 = Node("R5", parents=None, rvname='lognormal', rv=rv5)
-r4 = Node("R4", parents=[r5], rvname='continuous')
+r4 = Node("R4", parents=[r5], rvname='lognormal', rv=rv4)
 m4 = Node("M4", parents=[r4], rvname='continuous')
 m5 = Node("M5", parents=[r5], rvname='continuous')
 e = Node("E",parents=[r4,r5], rvname='discrete')
@@ -148,11 +148,13 @@ for i, label in enumerate(labels):
 nstate = 2
 labels = itertools.product(np.arange(r4.nstates()),np.arange(r5.nstates()))
 labels = [label for label in labels]
+#labels = [(0,0), (0,1), (0,2), (1,0), (1,1), (1,2)]
 allpfs = []
 for i,label in enumerate(labels):
     rvs=[]
     for j,pstate in enumerate(label):
         rvs.append(e.parents[j].truncate_rv(pstate))
+    mtr = rvs[-1].stats('m')
     rvnames = ['ur', 'u1', 'u2', 'u3', 'r4', 'r5', 'h', 'v']
     rvs = [ur, u1, u2, u3]+rvs+[h, v]
     syspf = msr2e(rvnames, rvs, logmean, logstd, rolnR)

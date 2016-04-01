@@ -372,6 +372,8 @@ def msr2e(rvnames, rvs, logmean, logstd, rolnR):
 
     # system reliability
     try:
+        #import ipdb; ipdb.set_trace() # BREAKPOINT
+        #debug = formBeta1.form_result().pf1
         sysBeta = SysReliab([formBeta1, formBeta2, formBeta3], [-3])
         sysBeta.set_nCSrv()
         sysformres = sysBeta.direct_msr()
