@@ -182,7 +182,7 @@ class Node(object):
             #if never assigned, initialize cpt
             if self.cpt is None:
                 self.cpt = np.empty((np.prod(npstate),statenum));self.cpt.fill(-1.0)
-            icpt = np.dot(label, kweight)
+            icpt = np.dot(label, kweight).astype(int)
             self.cpt[icpt,:] = cpt
 
 
