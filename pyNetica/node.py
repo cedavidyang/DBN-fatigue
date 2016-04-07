@@ -87,19 +87,28 @@ class Node(object):
         return self.cpt.shape[1]
 
 
-    def discretize(self, lb, ub, num, infinity=None):
-        if infinity is None:
-            bins = np.linspace(lb, ub, num=num+1)
-        elif infinity == '+' or infinity == np.inf:
-            bins = np.linspace(lb, ub, num=num)
-            bins = np.append(bins, np.inf)
-        elif infinity == '-' or infinity == -np.inf:
-            bins = np.linspace(lb, ub, num=num)
-            bins = np.insert(bins, 0, -np.inf)
-        elif infinity == '+-':
-            bins = np.linspace(lb, ub, num=num-1)
-            bins = np.insert(bins, 0, -np.inf)
-            bins = np.append(bins, np.inf)
+    def discretize(self, lb, ub, num, infinity=None, bins=None):
+        if bins in None:
+            if infinity is None:
+                bins = np.linspace(lb, ub, num=num+1)
+            elif infinity == '+' or infinity == np.inf:
+                bins = np.linspace(lb, ub, num=num)
+                bins = np.append(bins, np.inf)
+            elif infinity == '-' or infinity == -np.inf:
+                bins = np.linspace(lb, ub, num=num)
+                bins = np.insert(bins, 0, -np.inf)
+            elif infinity == '+-':
+                bins = np.linspace(lb, ub, num=num-1)
+                bins = np.insert(bins, 0, -np.inf)
+                bins = np.append(bins, np.inf)
+        else:
+            if (infinity == '+' or infinity == np.inf) and (bins[-1] != np.inf):
+                bins = np.append(bins, np.inf)
+            elif (infinity == '-' or infinity == -np.inf) and (bins[0] != -np.inf):
+                bins = np.insert(bins, 0, -np.inf)
+            elif infinity == '+-' and (bins[0]!=-np.inf) and (bins[-1]!=np.inf):
+                bins = np.insert(bins, 0, -np.inf)
+                bins = np.append(bins, np.inf)
         self.bins = bins
         return (0.5*(bins[:-1]+bins[1:])).astype('string')
 
