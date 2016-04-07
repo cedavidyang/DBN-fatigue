@@ -88,7 +88,7 @@ class Node(object):
 
 
     def discretize(self, lb, ub, num, infinity=None, bins=None):
-        if bins in None:
+        if bins is None:
             if infinity is None:
                 bins = np.linspace(lb, ub, num=num+1)
             elif infinity == '+' or infinity == np.inf:
