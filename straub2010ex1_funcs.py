@@ -1,5 +1,6 @@
 import os
-strepath = os.path.join(os.path.expanduser('~'), 'FERUM')
+# strepath = os.path.join(os.path.expanduser('~'), 'FERUM')
+strepath = os.path.abspath('../')
 import sys
 sys.path.append(strepath)
 
