@@ -11,5 +11,17 @@ Mac OS X
 The Netica C API for Mac OS X includes a static library only, where a dynamic library is needed for use with the python wrapper. You have to compile it yourself. First run in the src folder of the zip file:
 ./compile.sh
 This results in a NeticaEx.o file in the lib folder. Then go to the lib folder and run:
-g++ -shared libnetica.a NeticaEx.o -o libnetica.so
+32bit: g++ -shared NeticaEx.o libnetica.a -o libnetica.so
+64bit: g++ -shared NeticaEx.o ./64bit/libnetica.a  -o libnetica.so
 Copy the resulting libnetica.so to the lib directory of the Python Netica package (python/applications/Netica/lib/)
+
+Linux Ubuntu
+The Netica C API for Linux includes a static library only, where a dynamic library is needed for use with the python wrapper. You have to compile it yourself.
+First, the downloaded compile.sh in the src folder should add -fPIC flag at the end of the compiling line; then, run in the src folder of the zip file:
+./compile.sh
+This results in a NeticaEx.o file in the lib folder. Then go to the lib folder and run:
+32bit: g++ -shared NeticaEx.o libnetica.a -o libnetica.so
+64bit: g++ -shared NeticaEx.o ./64bit/libnetica.a  -o libnetica.so
+Copy the resulting libnetica.so to the lib directory of the Python Netica package
+
+The sequence of linking order is best explained here: http://docencia.ac.upc.edu/FIB/USO/Bibliografia/unix-c-libraries.html#link_order
