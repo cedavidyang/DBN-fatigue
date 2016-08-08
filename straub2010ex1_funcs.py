@@ -382,3 +382,25 @@ def msr2e(rvnames, rvs, logmean, logstd, rolnR):
     except np.linalg.LinAlgError:
         pf = 0.
     return pf
+
+
+def msr2e_mc(rvnames, rvs, logmean, logstd, rolnR, nsmp=int(1e6)):
+    ur = rvs[0].rvs(size=nsmp)
+    u1 = rvs[1].rvs(size=nsmp)
+    u2 = rvs[2].rvs(size=nsmp)
+    u3 = rvs[3].rvs(size=nsmp)
+    r4 = rvs[4].rvs(size=nsmp)
+    r5 = rvs[5].rvs(size=nsmp)
+    h = rvs[-2].rvs(size=nsmp)
+    v = rvs[-1].rvs(size=nsmp)
+    r15 = np.empty(5, dtype=object)
+    for i,ui in enumerate([u1,u2,u3]):
+        zi = np.sqrt(1.-rolnR)*ui+np.sqrt(rolnR)*ur
+        r15[i] = np.exp(logmean+zi*logstd)
+    r1 = r15[0]; r2 = r15[1]; r3=r15[2]
+    g1 = r1+r2+r4+r5-5*h
+    g2 = r2+2*r3+r4-5*v
+    g3 = r1+2*r3+2*r4+r5-5*h-5*v
+    gsyssmp = np.min([g1>=0,g2>=0,g3>=0], axis=0)
+    pf = 1.-np.sum(gsyssmp,dtype=float)/gsyssmp.size
+    return pf
