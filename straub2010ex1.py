@@ -54,16 +54,19 @@ if __name__ == '__main__':
     e = Node("E",parents=[r4,r5], rvname='discrete')
 
     # discretize continuous rv
-    r4num = 11
-    r5num = 11
-    m4num = 12
-    m5num = 12
+    r4num = 21
+    r5num = 21
+    m4num = 22
+    m5num = 22
     m = r5.rv.stats('m'); s = np.sqrt(r5.rv.stats('v'))
-    lb = 0.; ub = m+1.5*s
-    r5names = r5.discretize(lb, ub, r5num, infinity='+')
-    r4names = r4.discretize(lb, ub, r4num, infinity='+')
-    m4names = m4.discretize(lb, ub, m4num, infinity='+-')
-    m5names = m5.discretize(lb, ub, m4num, infinity='+-')
+    lb = 50.; ub = 250.
+    r4bins = np.hstack((0, np.linspace(lb, ub, r4num-1)))
+    r4names = r4.discretize(lb, ub, r4num, infinity='+', bins=r4bins)
+    m4names = m4.discretize(lb, ub, m4num, infinity='+-', bins=r4bins)
+    lb = 50.; ub = 250.
+    r5bins = np.hstack((0, np.linspace(lb, ub, r5num-1)))
+    r5names = r5.discretize(lb, ub, r5num, infinity='+', bins=r5bins)
+    m5names = m5.discretize(lb, ub, m5num, infinity='+-', bins=r5bins)
 
     # calculate and assignCPT
     # node R5
@@ -159,10 +162,11 @@ if __name__ == '__main__':
         rvnames = ['ur', 'u1', 'u2', 'u3', 'r4', 'r5', 'h', 'v']
         rvs = [ur, u1, u2, u3]+rvs+[h, v]
         syspf = msr2e(rvnames, rvs, logmean, logstd, rolnR)
-        syspfmc = syspf
+        # probs = np.array([1.-syspf, syspf])
+        # allpfs.append(syspf)
         # syspfmc = msr2e_mc(rvnames, rvs, logmean, logstd, rolnR)
-        probs = np.array([1.-syspf, syspf])
-        allpfs.append(syspf)
+        # probs = np.array([1.-syspfmc, syspfmc])
+        # allpfs.append(syspfmc)
         e.assign_cpt(probs,label=np.asarray(label),statenames=['safe', 'fail'])
         # print 'labels: {}, progress: {}%, pf: {}'.format(label, float(i)/len(labels)*100, syspf)
         print 'labels: {}, progress: {}%, pf: {}, pfmc: {}'.format(label, float(i)/len(labels)*100, syspf, syspfmc)
