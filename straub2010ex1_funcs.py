@@ -325,8 +325,10 @@ def msr2e(rvnames, rvs, logmean, logstd, rolnR):
     def dgdq1(x, param=None):
         z = np.sqrt(1.-rolnR)*x[1:3]+np.sqrt(rolnR)*x[0]
         r = np.exp(logmean+z*logstd)
-        return [np.sqrt(rolnR)*logstd*(r[0]+r[1]), r[0]*logstd*np.sqrt(rolnR),
-                r[1]*logstd*np.sqrt(rolnR), 1., 1., -5.]
+        return [np.sqrt(rolnR)*logstd*(r[0]+r[1]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                r[1]*logstd*np.sqrt(1.-rolnR),
+                1., 1., -5.]
     rvnames1 = [rvnames[0], rvnames[1], rvnames[2], rvnames[4], rvnames[5], rvnames[6]]
     rvs1 = [rvs[0], rvs[1], rvs[2], rvs[4], rvs[5], rvs[6]]
     corr1 = np.eye(len(rvnames1))
@@ -343,8 +345,10 @@ def msr2e(rvnames, rvs, logmean, logstd, rolnR):
     def dgdq2(x, param=None):
         z = np.sqrt(1.-rolnR)*x[1:3]+np.sqrt(rolnR)*x[0]
         r = np.exp(logmean+z*logstd)
-        return [np.sqrt(rolnR)*logstd*(r[0]+2*r[1]), r[0]*logstd*np.sqrt(rolnR),
-                2*r[1]*logstd*np.sqrt(rolnR), 1., -5.]
+        return [np.sqrt(rolnR)*logstd*(r[0]+2*r[1]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                2*r[1]*logstd*np.sqrt(1.-rolnR),
+                1., -5.]
     rvnames2 = [rvnames[0], rvnames[2], rvnames[3], rvnames[4], rvnames[7]]
     rvs2 = [rvs[0], rvs[2], rvs[3], rvs[4], rvs[7]]
     corr2 = np.eye(len(rvnames2))
@@ -361,8 +365,10 @@ def msr2e(rvnames, rvs, logmean, logstd, rolnR):
     def dgdq3(x, param=None):
         z = np.sqrt(1.-rolnR)*x[1:3]+np.sqrt(rolnR)*x[0]
         r = np.exp(logmean+z*logstd)
-        return [np.sqrt(rolnR)*logstd*(r[0]+2*r[1]), r[0]*logstd*np.sqrt(rolnR),
-                2*r[1]*logstd*np.sqrt(rolnR), 2., 1., -5., -5.]
+        return [np.sqrt(rolnR)*logstd*(r[0]+2*r[1]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                2*r[1]*logstd*np.sqrt(1.-rolnR),
+                2., 1., -5., -5.]
     rvnames3 = [rvnames[0], rvnames[1], rvnames[3], rvnames[4], rvnames[5], rvnames[6], rvnames[7]]
     rvs3 = [rvs[0], rvs[1], rvs[3], rvs[4], rvs[5], rvs[6], rvs[7]]
     corr3 = np.eye(len(rvnames3))
@@ -404,3 +410,166 @@ def msr2e_mc(rvnames, rvs, logmean, logstd, rolnR, nsmp=int(1e6)):
     gsyssmp = np.min([g1>=0,g2>=0,g3>=0], axis=0)
     pf = 1.-np.sum(gsyssmp,dtype=float)/gsyssmp.size
     return pf
+
+
+def msr2e_test(rvnames, rvs, logmean, logstd, rolnR, truncrvs):
+    r4lb = truncrvs[0].lb
+    r4ub = truncrvs[0].ub
+    r5lb = truncrvs[1].lb
+    r5ub = truncrvs[1].ub
+    # limit state 1
+    def gf1(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[0]+r[1]+r[2]+r[3]-5*x[-1]
+    def dgdq1(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*(r[0]+r[1]+r[2]+r[3]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                r[1]*logstd*np.sqrt(1.-rolnR),
+                r[2]*logstd*np.sqrt(1.-rolnR),
+                r[3]*logstd*np.sqrt(1.-rolnR),
+                -5.]
+    rvnames1 = [rvnames[0], rvnames[1], rvnames[2], rvnames[4], rvnames[5], rvnames[6]]
+    rvs1 = [rvs[0], rvs[1], rvs[2], rvs[4], rvs[5], rvs[6]]
+    corr1 = np.eye(len(rvnames1))
+    probdata1 = ProbData(names=rvnames1, rvs=rvs1, corr=corr1, nataf=False)
+    analysisopt1 = AnalysisOpt(gradflag='DDM', recordu=False, recordx=False, flagsens=False, verbose=False)
+    gfunc1 = Gfunc(gf1, dgdq1)
+    formBeta1 = CompReliab(probdata1, gfunc1, analysisopt1)
+
+    # limit state 2
+    def gf2(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[0]+2*r[1]+r[2]-5*x[-1]
+    def dgdq2(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*(r[0]+2*r[1]+r[2]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                2*r[1]*logstd*np.sqrt(1.-rolnR),
+                r[2]*logstd*np.sqrt(1.-rolnR),
+                -5.]
+    rvnames2 = [rvnames[0], rvnames[2], rvnames[3], rvnames[4], rvnames[7]]
+    rvs2 = [rvs[0], rvs[2], rvs[3], rvs[4], rvs[7]]
+    corr2 = np.eye(len(rvnames2))
+    probdata2 = ProbData(names=rvnames2, rvs=rvs2, corr=corr2, nataf=False)
+    analysisopt2 = AnalysisOpt(gradflag='DDM', recordu=False, recordx=False, flagsens=False, verbose=False)
+    gfunc2 = Gfunc(gf2, dgdq2)
+    formBeta2 = CompReliab(probdata2, gfunc2, analysisopt2)
+
+    # limit state 3
+    def gf3(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-2]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[0]+2*r[1]+2*r[2]+r[3]-5*x[-2]-5*x[-1]
+    def dgdq3(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-2]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*(r[0]+2*r[1]+2*r[2]+r[3]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                2*r[1]*logstd*np.sqrt(1.-rolnR),
+                2*r[2]*logstd*np.sqrt(1.-rolnR),
+                r[3]*logstd*np.sqrt(1.-rolnR),
+                -5., -5.]
+    rvnames3 = [rvnames[0], rvnames[1], rvnames[3], rvnames[4], rvnames[5], rvnames[6], rvnames[7]]
+    rvs3 = [rvs[0], rvs[1], rvs[3], rvs[4], rvs[5], rvs[6], rvs[7]]
+    corr3 = np.eye(len(rvnames3))
+    probdata3 = ProbData(names=rvnames3, rvs=rvs3, corr=corr3, nataf=False)
+    analysisopt3 = AnalysisOpt(gradflag='DDM', recordu=False, recordx=False, flagsens=False, verbose=False)
+    gfunc3 = Gfunc(gf3, dgdq3)
+    formBeta3 = CompReliab(probdata3, gfunc3, analysisopt3)
+
+    # limit state 4
+    def gf4(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return -(r-r4lb)*(r-r4ub)
+    def dgdq4(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        drdur = np.sqrt(rolnR)*logstd*r
+        drdui = np.sqrt(1.-rolnR)*logstd*r
+        return [-2.*r*drdur+(r4lb+r4ub)*drdur,
+                -2.*r*drdui+(r4lb+r4ub)*drdui]
+    rvnames4 = [rvnames[0], rvnames[4]]
+    rvs4 = [rvs[0], rvs[4]]
+    corr4 = np.eye(len(rvnames4))
+    probdata4 = ProbData(names=rvnames4, rvs=rvs4, corr=corr4, nataf=False)
+    analysisopt4 = AnalysisOpt(gradflag='DDM', recordu=False, recordx=False, flagsens=False, verbose=False)
+    gfunc4 = Gfunc(gf4, dgdq4)
+    formBeta4 = CompReliab(probdata4, gfunc4, analysisopt4)
+
+
+    # limit state 5
+    def gf5(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return -(r-r5lb)*(r-r5ub)
+    def dgdq5(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        drdur = np.sqrt(rolnR)*logstd*r
+        drdui = np.sqrt(1.-rolnR)*logstd*r
+        return [-2.*r*drdur+(r5lb+r5ub)*drdur,
+                -2.*r*drdui+(r5lb+r5ub)*drdui]
+    rvnames5 = [rvnames[0], rvnames[5]]
+    rvs5 = [rvs[0], rvs[5]]
+    corr5 = np.eye(len(rvnames5))
+    probdata5 = ProbData(names=rvnames5, rvs=rvs5, corr=corr5, nataf=False)
+    analysisopt5 = AnalysisOpt(gradflag='DDM', recordu=False, recordx=False, flagsens=False, verbose=False)
+    gfunc5 = Gfunc(gf5, dgdq5)
+    formBeta5 = CompReliab(probdata5, gfunc5, analysisopt5)
+
+
+    # system reliability
+    try:
+        #import ipdb; ipdb.set_trace() # BREAKPOINT
+        #debug = formBeta1.form_result().pf1
+        sysBeta = SysReliab([formBeta1, formBeta2, formBeta3,
+            formBeta4, formBeta5], [-5])
+        sysBeta.set_nCSrv(2)
+        sysformres = sysBeta.direct_msr()
+        pfabs = sysformres.pf
+        pcondsafe = 1. - pfabs
+        sysBetacond = SysReliab([formBeta4, formBeta5], [-2])
+        sysBetacond.set_nCSrv()
+        sysformrescond = sysBetacond.direct_msr()
+        deno = 1.-sysformrescond.pf
+        pf = 1.-pcondsafe/deno
+    except np.linalg.LinAlgError:
+        pf = 0.
+    return pf
+
+
+def msr2e_mc_test(rvnames, rvs, logmean, logstd, rolnR, truncrvs, nsmp=int(1e6)):
+    r4lb = truncrvs[0].lb
+    r4ub = truncrvs[0].ub
+    r5lb = truncrvs[1].lb
+    r5ub = truncrvs[1].ub
+    ur = rvs[0].rvs(size=nsmp)
+    u1 = rvs[1].rvs(size=nsmp)
+    u2 = rvs[2].rvs(size=nsmp)
+    u3 = rvs[3].rvs(size=nsmp)
+    u4 = rvs[4].rvs(size=nsmp)
+    u5 = rvs[5].rvs(size=nsmp)
+    h = rvs[-2].rvs(size=nsmp)
+    v = rvs[-1].rvs(size=nsmp)
+    r15 = np.empty(5, dtype=object)
+    for i,ui in enumerate([u1,u2,u3,u4,u5]):
+        zi = np.sqrt(1.-rolnR)*ui+np.sqrt(rolnR)*ur
+        r15[i] = np.exp(logmean+zi*logstd)
+    r1 = r15[0]; r2 = r15[1]; r3=r15[2]; r4=r15[3]; r5=r15[4]
+    g1 = r1+r2+r4+r5-5*h
+    g2 = r2+2*r3+r4-5*v
+    g3 = r1+2*r3+2*r4+r5-5*h-5*v
+    g4 = (r4-r4lb)*(r4-r4ub)
+    g5 = (r5-r5lb)*(r5-r5ub)
+    gcond = np.min([g4<=0, g5<=0], axis=0)
+    gsyssmp = np.min([g1>=0,g2>=0,g3>=0, g4<=0, g5<=0], axis=0)
+    pf = 1.-np.sum(gsyssmp,dtype=float)/np.sum(gcond,dtype=float)
+    if np.isnan(pf) or np.isinf(pf):
+        pf = -1.
+    return pf, gsyssmp, gcond
