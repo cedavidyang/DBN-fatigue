@@ -11,7 +11,7 @@ import time
 import datetime
 
 from pyNetica import Node,Network
-from straub2010ex1_funcs import sys_prior, form2m, msr2e, msr2e_mc
+from straub2010ex1_funcs import sys_prior, form2m, msr2e, msr2e_mc, msr2e_wrong, msr2e_mc_wrong
 
 if __name__ == '__main__':
     # random variables
@@ -54,10 +54,10 @@ if __name__ == '__main__':
     e = Node("E",parents=[r4,r5], rvname='discrete')
 
     # discretize continuous rv
-    r4num = 21
-    r5num = 21
-    m4num = 22
-    m5num = 22
+    r4num = 20+1
+    r5num = 20+1
+    m4num = 20+2
+    m5num = 20+2
     m = r5.rv.stats('m'); s = np.sqrt(r5.rv.stats('v'))
     lb = 50.; ub = 250.
     r4bins = np.hstack((0, np.linspace(lb, ub, r4num-1)))
@@ -152,19 +152,19 @@ if __name__ == '__main__':
     nstate = 2
     labels = itertools.product(np.arange(r4.nstates()),np.arange(r5.nstates()))
     labels = [label for label in labels]
-    #labels = [(0,0), (0,1), (0,2), (1,0), (1,1), (1,2)]
+    # labels = [(0,0), (0,1), (0,2), (1,0), (1,1), (1,2)]
     allpfs = []
     for i,label in enumerate(labels):
         rvs=[]
         for j,pstate in enumerate(label):
             rvs.append(e.parents[j].truncate_rv(pstate))
         mtr = rvs[-1].stats('m')
-        rvnames = ['ur', 'u1', 'u2', 'u3', 'r4', 'r5', 'h', 'v']
-        rvs = [ur, u1, u2, u3]+rvs+[h, v]
+        rvnames = ['ur', 'u1', 'u2', 'u3', 'r4', 'r5', 'h', 'v', 'u4', 'u5']
+        rvs = [ur, u1, u2, u3]+rvs+[h, v, u4, u5]
         syspf = msr2e(rvnames, rvs, logmean, logstd, rolnR)
-        # probs = np.array([1.-syspf, syspf])
-        # allpfs.append(syspf)
-        # syspfmc = msr2e_mc(rvnames, rvs, logmean, logstd, rolnR)
+        probs = np.array([1.-syspf, syspf])
+        allpfs.append(syspf)
+        syspfmc = msr2e_mc(rvnames, rvs, logmean, logstd, rolnR)
         # probs = np.array([1.-syspfmc, syspfmc])
         # allpfs.append(syspfmc)
         e.assign_cpt(probs,label=np.asarray(label),statenames=['safe', 'fail'])
