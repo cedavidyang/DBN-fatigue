@@ -11,7 +11,7 @@ import time
 import datetime
 
 from pyNetica import Node,Network
-from straub2010ex1_funcs import sys_prior, form2m, msr2e, msr2e_mc, msr2e_wrong, msr2e_mc_wrong
+from straub2010ex1_funcs import sys_prior, msr2m, msr2e
 
 if __name__ == '__main__':
     # random variables
@@ -91,85 +91,78 @@ if __name__ == '__main__':
             low = np.array([z5lb, z4lb]); low[np.isneginf(low)] = -20.
             upp = np.array([z5ub, z4ub]); upp[np.isposinf(upp)] = 20.
             prob,info = stats.mvn.mvnun(low, upp, np.zeros(2), np.array([[1.,rolnR],[rolnR,1.]]))
-            #prob = prob/(stats.norm.cdf(z5ub)-stats.norm.cdf(z5lb))
             probs.append(prob)
         probs = np.asarray(probs)
         if np.sum(probs) == 0:
             probs = np.ones(probs.shape)
         probs = probs/np.sum(probs)
         r4.assign_cpt(probs,label=np.asarray(label),statenames=r4names)
+
     # node M4
     nstate = m4num
     labels = itertools.product(np.arange(r4.nstates()))
-    rvnames = [r4.name, 'TE']
     for i, label in enumerate(labels):
-        rvs = []
+        truncrvs = []
         probs=[]
         for j, pstate in enumerate(label):
-            rvs.append(m4.parents[j].truncate_rv(pstate))
-        rvs.append(rvte)
-        corr = np.eye(len(rvs))
+            truncrvs.append(m4.parents[j].truncate_rv(pstate))
+        rvnames = ['u4', 'TE']
+        rvs = [u4, rvte]
+        trunclb = [rv.lb for rv in truncrvs]
+        truncub = [rv.ub for rv in truncrvs]
         for k in xrange(nstate):
-            bins = [m4.bins[k], m4.bins[k+1]]
-            ## get prob from FORM
-            #prob0 = form2m(rvnames, rvs, corr, bins)
-            # get approximate prob on the condition of the mean value of Ri
-            rmean = float(rvs[0].stats('m'))
-            prob = stats.norm.cdf(bins[1], loc=rmean, scale=mstd) - \
-                    stats.norm.cdf(bins[0], loc=rmean, scale=mstd)
+            mbins = [m4.bins[k], m4.bins[k+1]]
+            rmean = float(truncrvs[0].stats('m'))
+            prob = stats.norm.cdf(mbins[1], loc=rmean, scale=mstd) - \
+                    stats.norm.cdf(mbins[0], loc=rmean, scale=mstd)
+            prob0 = msr2m(rvnames, rvs, logmean, logstd, trunclb, truncub, mbins)
             probs.append(prob)
+            print 'labels: {}, pf: {}, pf0:{}'.format((i,k), prob, prob0)
         probs = np.asarray(probs)
         if np.sum(probs) == 0:
             probs = np.ones(probs.shape)
-        probs = probs/np.sum(probs)
+        probs = probs/np.sum(probs,dtype=float)
         m4.assign_cpt(probs,label=np.asarray(label),statenames=m4names)
+
     # node M5
     nstate = m5num
     labels = itertools.product(np.arange(r5.nstates()))
-    rvnames = [r5.name, 'TE']
     for i, label in enumerate(labels):
-        rvs = []
+        truncrvs = []
         probs=[]
         for j, pstate in enumerate(label):
-            rvs.append(m5.parents[j].truncate_rv(pstate))
-        rvs.append(rvte)
-        corr = np.eye(len(rvs))
+            truncrvs.append(m5.parents[j].truncate_rv(pstate))
+        rvnames = ['u5', 'TE']
+        rvs = [u5, rvte]
+        trunclb = [rv.lb for rv in truncrvs]
+        truncub = [rv.ub for rv in truncrvs]
         for k in xrange(nstate):
-            bins = [m5.bins[k], m5.bins[k+1]]
-            ## get prob from FORM
-            #prob0 = form2m(rvnames, rvs, corr, bins)
-            # get approximate prob on the condition of the mean value of Ri
-            rmean = float(rvs[0].stats('m'))
-            prob = stats.norm.cdf(bins[1], loc=rmean, scale=mstd) - \
-                    stats.norm.cdf(bins[0], loc=rmean, scale=mstd)
+            mbins = [m5.bins[k], m5.bins[k+1]]
+            prob = msr2m(rvnames, rvs, logmean, logstd, trunclb, truncub, mbins)
             probs.append(prob)
         probs = np.asarray(probs)
         if np.sum(probs) == 0:
             probs = np.ones(probs.shape)
-        probs = probs/np.sum(probs)
+        probs = probs/np.sum(probs,dtype=float)
         m5.assign_cpt(probs,label=np.asarray(label),statenames=m5names)
+
     # node E
     nstate = 2
     labels = itertools.product(np.arange(r4.nstates()),np.arange(r5.nstates()))
     labels = [label for label in labels]
-    # labels = [(0,0), (0,1), (0,2), (1,0), (1,1), (1,2)]
-    allpfs = []
+    # labels = [(10,10),(4,4),(4,4)]
     for i,label in enumerate(labels):
-        rvs=[]
+        truncrvs=[]
         for j,pstate in enumerate(label):
-            rvs.append(e.parents[j].truncate_rv(pstate))
-        mtr = rvs[-1].stats('m')
-        rvnames = ['ur', 'u1', 'u2', 'u3', 'r4', 'r5', 'h', 'v', 'u4', 'u5']
-        rvs = [ur, u1, u2, u3]+rvs+[h, v, u4, u5]
-        syspf = msr2e(rvnames, rvs, logmean, logstd, rolnR)
+            truncrvs.append(e.parents[j].truncate_rv(pstate))
+        rvnames = ['ur', 'u1', 'u2', 'u3', 'u4', 'u5', 'h', 'v']
+        rvs = [ur, u1, u2, u3, u4, u5, h, v]
+        trunclb = [rv.lb for rv in truncrvs]
+        truncub = [rv.ub for rv in truncrvs]
+        syspf = msr2e(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub)
         probs = np.array([1.-syspf, syspf])
-        allpfs.append(syspf)
-        syspfmc = msr2e_mc(rvnames, rvs, logmean, logstd, rolnR)
-        # probs = np.array([1.-syspfmc, syspfmc])
-        # allpfs.append(syspfmc)
         e.assign_cpt(probs,label=np.asarray(label),statenames=['safe', 'fail'])
-        # print 'labels: {}, progress: {}%, pf: {}'.format(label, float(i)/len(labels)*100, syspf)
-        print 'labels: {}, progress: {}%, pf: {}, pfmc: {}'.format(label, float(i)/len(labels)*100, syspf, syspfmc)
+        print 'labels: {}, progress: {}%, pf: {}'.format(label, float(i)/len(labels)*100, syspf)
 
     # create new network
     dbnet = Network("Straub2010Ex1")
