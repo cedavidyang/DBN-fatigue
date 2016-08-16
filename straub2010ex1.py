@@ -113,9 +113,9 @@ if __name__ == '__main__':
         for k in xrange(nstate):
             mbins = [m4.bins[k], m4.bins[k+1]]
             rmean = float(truncrvs[0].stats('m'))
-            prob = stats.norm.cdf(mbins[1], loc=rmean, scale=mstd) - \
+            prob0 = stats.norm.cdf(mbins[1], loc=rmean, scale=mstd) - \
                     stats.norm.cdf(mbins[0], loc=rmean, scale=mstd)
-            prob0 = msr2m(rvnames, rvs, logmean, logstd, trunclb, truncub, mbins)
+            prob = msr2m(rvnames, rvs, logmean, logstd, trunclb, truncub, mbins)
             probs.append(prob)
             print 'labels: {}, pf: {}, pf0:{}'.format((i,k), prob, prob0)
         probs = np.asarray(probs)
