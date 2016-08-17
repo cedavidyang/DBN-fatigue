@@ -3,6 +3,7 @@ import os
 strepath = os.path.abspath('../')
 import sys
 sys.path.append(strepath)
+import scipy.integrate as intg
 
 from pyStRe import *
 import numpy as np
@@ -260,7 +261,7 @@ def msr2e(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub):
         r = np.exp(logmean+z*logstd)
         return r[1]+2*r[2]+r[3]-5*x[-1]
     def dgdq2(x, param=None):
-        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        z = np.sqrt(1.-rolnR)*x[1:-2]+np.sqrt(rolnR)*x[0]
         r = np.exp(logmean+z*logstd)
         return [np.sqrt(rolnR)*logstd*(r[1]+2*r[2]+r[3]),
                 0.,
@@ -414,3 +415,225 @@ def msr2e_mc(rvnames, rvs, logmean, logstd, rolnR, truncrvs, nsmp=int(1e7)):
     if np.isnan(pf) or np.isinf(pf):
         pf = 0.
     return pf
+
+
+# from Ri to E
+def msr2q(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub, qbin):
+    r4lb = trunclb[0]
+    r4ub = truncub[0]
+    if np.isinf(r4ub): r4ub = np.exp(logmean+10*logstd)
+    r5lb = trunclb[1]
+    r5ub = truncub[1]
+    if np.isinf(r5ub): r5ub = np.exp(logmean+10*logstd)
+    qplus = qbin[1]
+    corr = np.eye(len(rvnames))
+    probdata = ProbData(names=rvnames, rvs=rvs, corr=corr, nataf=False)
+    analysisopt = AnalysisOpt(gradflag='DDM', recordu=False, recordx=False,
+            flagsens=False, verbose=False)
+    # limit state 1
+    def gf1(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[0]+r[1]+r[3]+r[4]-5*qplus
+    def dgdq1(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*(r[0]+r[1]+r[3]+r[4]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                r[1]*logstd*np.sqrt(1.-rolnR),
+                0.,
+                r[3]*logstd*np.sqrt(1.-rolnR),
+                r[4]*logstd*np.sqrt(1.-rolnR),
+                0.]
+    gfunc1 = Gfunc(gf1, dgdq1)
+    formBeta1 = CompReliab(probdata, gfunc1, analysisopt)
+
+    # limit state 2
+    def gf2(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[1]+2*r[2]+r[3]-5*x[-1]
+    def dgdq2(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*(r[1]+2*r[2]+r[3]),
+                0.,
+                r[1]*logstd*np.sqrt(1.-rolnR),
+                2*r[2]*logstd*np.sqrt(1.-rolnR),
+                r[3]*logstd*np.sqrt(1.-rolnR),
+                0., -5.]
+    gfunc2 = Gfunc(gf2, dgdq2)
+    formBeta2 = CompReliab(probdata, gfunc2, analysisopt)
+
+    # limit state 3
+    def gf3(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[0]+2*r[2]+2*r[3]+r[4]-5*qplus-5*x[-1]
+    def dgdq3(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*(r[0]+2*r[2]+2*r[3]+r[4]),
+                r[0]*logstd*np.sqrt(1.-rolnR),
+                0.,
+                2*r[2]*logstd*np.sqrt(1.-rolnR),
+                2*r[3]*logstd*np.sqrt(1.-rolnR),
+                r[4]*logstd*np.sqrt(1.-rolnR),
+                -5.]
+    gfunc3 = Gfunc(gf3, dgdq3)
+    formBeta3 = CompReliab(probdata, gfunc3, analysisopt)
+
+    # limit state 4
+    def gf4(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[3]-r4lb
+    def dgdq4(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*r[3],
+                0.,
+                0.,
+                0.,
+                r[3]*logstd*np.sqrt(1.-rolnR),
+                0.,0.]
+    gfunc4 = Gfunc(gf4, dgdq4)
+    formBeta4 = CompReliab(probdata, gfunc4, analysisopt)
+
+
+    # limit state 5
+    def gf5(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r4ub-r[3]
+    def dgdq5(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [-np.sqrt(rolnR)*logstd*r[3],
+                0.,
+                0.,
+                0.,
+                -r[3]*logstd*np.sqrt(1.-rolnR),
+                0.,0.]
+    gfunc5 = Gfunc(gf5, dgdq5)
+    formBeta5 = CompReliab(probdata, gfunc5, analysisopt)
+
+    # limit state 6
+    def gf6(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[4]-r5lb
+    def dgdq6(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*r[4],
+                0.,
+                0.,
+                0.,
+                0.,
+                r[4]*logstd*np.sqrt(1.-rolnR),
+                0.]
+    gfunc6 = Gfunc(gf6, dgdq6)
+    formBeta6 = CompReliab(probdata, gfunc6, analysisopt)
+
+    # limit state 7
+    def gf7(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r5ub-r[4]
+    def dgdq7(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [-np.sqrt(rolnR)*logstd*r[4],
+                0.,
+                0.,
+                0.,
+                0.,
+                -r[4]*logstd*np.sqrt(1.-rolnR),
+                0.]
+    gfunc7 = Gfunc(gf7, dgdq7)
+    formBeta7 = CompReliab(probdata, gfunc7, analysisopt)
+
+    # system reliability
+    try:
+        sysBeta = SysReliab([formBeta1, formBeta2, formBeta3, formBeta4,
+            formBeta5, formBeta6, formBeta7], [-7])
+        sysBetacond = SysReliab([formBeta4, formBeta5, formBeta6, formBeta7], [-4])
+        sysformres = sysBeta.mvn_msr(sysBeta.syscorr)
+        sysformrescond = sysBetacond.mvn_msr(sysBetacond.syscorr)
+        ptotal_safe = 1.-sysformres.pf
+        pcond = 1.-sysformrescond.pf
+        pf = 1.-ptotal_safe/pcond
+        while pf<0:
+            sysformres = sysBeta.mvn_msr(sysBeta.syscorr)
+            sysformrescond = sysBetacond.mvn_msr(sysBetacond.syscorr)
+            ptotal_safe = 1.-sysformres.pf
+            pcond = 1.-sysformrescond.pf
+            pf = 1.-ptotal_safe/pcond
+    except np.linalg.LinAlgError:
+        pf = 0.
+    return pf
+
+
+def intg2h(uhrv, trunclb, truncub, hbin, abstol=1e-12, reltol=1e-8, nsmp=int(1e6)):
+    uhlb = trunclb[0]
+    uhub = truncub[0]
+    hlb = hbin[0]
+    hub = hbin[1]
+    # if np.isposinf(uhub): uhub=10*uhlb
+    # if np.isposinf(hub): hub=10*hlb
+    def integrnd(uh,h,uhrv):
+        hmean = uh+9.
+        hstd = 20.
+        beta = (hstd)/(np.pi/np.sqrt(6))
+        mu = hmean-np.euler_gamma*beta
+        hrv = stats.gumbel_r(loc=mu, scale=beta)
+        pdfproduct = hrv.pdf(h)*uhrv.pdf(uh)
+        return pdfproduct
+    p,err = intg.dblquad(lambda x,y: integrnd(x,y,uhrv), hlb, hub,
+            lambda y: uhlb, lambda y: uhub, epsabs=abstol)
+    return p
+
+
+def intg2h_mc(uhrv, trunclb, truncub, hbin, abstol=1e-12, reltol=1e-8, nsmp=int(1e5)):
+    uhlb = trunclb[0]
+    uhub = truncub[0]
+    hlb = hbin[0]
+    hub = hbin[1]
+    uhsmp = uhrv.rvs(size=nsmp)
+    hmeansmp = uhsmp+9.
+    pdfsum = 0.
+    for hmean in hmeansmp:
+        hstd = 20.
+        beta = (hstd)/(np.pi/np.sqrt(6))
+        mu = hmean-np.euler_gamma*beta
+        hrv = stats.gumbel_r(loc=mu, scale=beta)
+        pdfsum += hrv.cdf(hub)-hrv.cdf(hlb)
+    p=pdfsum/nsmp
+    return p
+
+
+def intg2e(qrv, hrv, abstol=1e-12, reltol=1e-8):
+    qlb = qrv.lb
+    qub = qrv.ub
+    hlb = hrv.lb
+    hub = hrv.ub
+    if np.isposinf(hub) or np.isposinf(qub):
+        def integrnd(h,q,hrv,qrv):
+            res = np.array((h-q)>0,dtype=float)*hrv.pdf(h)*qrv.pdf(q)
+            return res
+        p,err = intg.dblquad(lambda x,y: integrnd(x,y,hrv,qrv), hlb, hub,
+                lambda y: qlb, lambda y: qub, epsabs=abstol)
+    else:    # two uniform distributions
+        if qub<=hlb:
+            p = 1.
+        elif qlb>=hub:
+            p = 0.
+        elif hub>qlb and hlb<=qlb:
+            p = 0.5*(hub-qlb)**2/((hub-hlb)*(qub-qlb))
+        elif hub>qub and hlb<=qub:
+            p = 1. - 0.5*(qub-hlb)**2/((hub-hlb)*(qub-qlb))
+        else:
+            print 'sth is wrong'
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+    return p
