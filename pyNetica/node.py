@@ -110,7 +110,12 @@ class Node(object):
                 bins = np.insert(bins, 0, -np.inf)
                 bins = np.append(bins, np.inf)
         self.bins = bins
-        return (0.5*(bins[:-1]+bins[1:])).astype('string')
+        # illname = (0.5*(bins[:-1]+bins[1:])).astype('string')
+        illname = bins[1:].astype('string')
+        namelist = np.core.defchararray.replace(illname, '.', '_')
+        namelist = np.core.defchararray.add('N', namelist)
+        self.statenames = namelist
+        return namelist
 
 
     def truncate_rv(self, ntrunct, lmd=_LMD_DEFAULT):
@@ -132,13 +137,19 @@ class Node(object):
                 if self.bins[ntrunct] == -np.inf:
                     redge = bins[ntrunct+1]
                     trv = NegExpon(loc=redge, scale=1./lmd)
+                    trv.lb = -np.inf
+                    trv.ub = redge
                 elif self.bins[ntrunct+1] == np.inf:
                     ledge = bins[ntrunct]
                     trv = stats.expon(loc=ledge, scale=1./lmd)
+                    trv.lb = ledge
+                    trv.ub = np.inf
                 else:
                     ledge = bins[ntrunct]
                     redge = bins[ntrunct+1]
                     trv = stats.uniform(loc=ledge, scale = redge-ledge)
+                    trv.lb = ledge
+                    trv.ub = redge
             else:
                 ledge = bins[ntrunct]
                 redge = bins[ntrunct+1]
@@ -151,7 +162,7 @@ class Node(object):
         return trv
 
 
-    def assign_cpt(self, cpt, label=None, statenames=None):
+    def assign_cpt(self, cpt, label=None, statenames=None, labels=None):
         """ when label is given, cpt is a 1d-array; otherwise, it must be a 2d-array"""
         statenum = cpt.shape[-1]
         # set node names
@@ -178,12 +189,19 @@ class Node(object):
                 except IndexError:
                     print "parent {} of node {} must be assigned to a cpt".format(parent.name, self.name)
                     sys.exit(1)
-                kweight[iparent] = npstate[iparent]**(nparent-iparent-1)
             #if never assigned, initialize cpt
             if self.cpt is None:
                 self.cpt = np.empty((np.prod(npstate),statenum));self.cpt.fill(-1.0)
-            icpt = np.dot(label, kweight).astype(int)
-            self.cpt[icpt,:] = cpt
+            if labels is None:
+                npstate = np.hstack((npstate,1))
+                for iparent in xrange(nparent):
+                    kweight[iparent] = np.prod(npstate[iparent+1:])
+                icpt = np.dot(label, kweight).astype(int)
+                self.cpt[icpt,:] = cpt
+            else:
+                tmpres = (np.array(labels)-label).any(axis=1)
+                icpt = np.where(~tmpres)[0][0]
+                self.cpt[icpt,:] = cpt
 
 
     def node_stats(self, probs, states=None, lmd=_LMD_DEFAULT, moments='mv'):
