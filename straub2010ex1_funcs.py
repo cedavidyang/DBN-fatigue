@@ -417,8 +417,8 @@ def msr2e_mc(rvnames, rvs, logmean, logstd, rolnR, truncrvs, nsmp=int(1e7)):
     return pf
 
 
-# from Ri to E
-def msr2q(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub, qbin):
+# from Ri to Q
+def msr2q(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub, qbin, abstol=1e-12, reltol=1e-12, neval=100):
     r4lb = trunclb[0]
     r4ub = truncub[0]
     if np.isinf(r4ub): r4ub = np.exp(logmean+10*logstd)
@@ -558,18 +558,134 @@ def msr2q(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub, qbin):
     try:
         sysBeta = SysReliab([formBeta1, formBeta2, formBeta3, formBeta4,
             formBeta5, formBeta6, formBeta7], [-7])
-        sysBetacond = SysReliab([formBeta4, formBeta5, formBeta6, formBeta7], [-4])
         sysformres = sysBeta.mvn_msr(sysBeta.syscorr)
-        sysformrescond = sysBetacond.mvn_msr(sysBetacond.syscorr)
         ptotal_safe = 1.-sysformres.pf
-        pcond = 1.-sysformrescond.pf
-        pf = 1.-ptotal_safe/pcond
-        while pf<0:
+        psum = ptotal_safe
+        for ieval in range(neval):
             sysformres = sysBeta.mvn_msr(sysBeta.syscorr)
+            pcurrent = 1.-sysformres.pf
+            psum += pcurrent
+            pbest = psum/(ieval+2.)
+            perror = abs(pbest-pcurrent)
+            if perror<=np.maximum(abstol, pbest*reltol):
+                break
+        pf = pbest
+        # sysBeta = SysReliab([formBeta1, formBeta2, formBeta3, formBeta4,
+            # formBeta5, formBeta6, formBeta7], [-7])
+        # sysBetacond = SysReliab([formBeta4, formBeta5, formBeta6, formBeta7], [-4])
+        # sysformres = sysBeta.mvn_msr(sysBeta.syscorr)
+        # sysformrescond = sysBetacond.mvn_msr(sysBetacond.syscorr)
+        # ptotal_safe = 1.-sysformres.pf
+        # pcond = 1.-sysformrescond.pf
+        # pf = 1.-ptotal_safe/pcond
+        # while pf<0:
+            # sysformres = sysBeta.mvn_msr(sysBeta.syscorr)
+            # sysformrescond = sysBetacond.mvn_msr(sysBetacond.syscorr)
+            # ptotal_safe = 1.-sysformres.pf
+            # pcond = 1.-sysformrescond.pf
+            # pf = 1.-ptotal_safe/pcond
+    except np.linalg.LinAlgError:
+        pf = 0.
+    return pf
+
+
+def msr2qcond(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub, abstol=1e-12, reltol=1e-12, neval=50):
+    r4lb = trunclb[0]
+    r4ub = truncub[0]
+    if np.isinf(r4ub): r4ub = np.exp(logmean+10*logstd)
+    r5lb = trunclb[1]
+    r5ub = truncub[1]
+    if np.isinf(r5ub): r5ub = np.exp(logmean+10*logstd)
+    corr = np.eye(len(rvnames))
+    probdata = ProbData(names=rvnames, rvs=rvs, corr=corr, nataf=False)
+    analysisopt = AnalysisOpt(gradflag='DDM', recordu=False, recordx=False,
+            flagsens=False, verbose=False)
+    # limit state 4
+    def gf4(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[3]-r4lb
+    def dgdq4(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*r[3],
+                0.,
+                0.,
+                0.,
+                r[3]*logstd*np.sqrt(1.-rolnR),
+                0.,0.]
+    gfunc4 = Gfunc(gf4, dgdq4)
+    formBeta4 = CompReliab(probdata, gfunc4, analysisopt)
+
+
+    # limit state 5
+    def gf5(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r4ub-r[3]
+    def dgdq5(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [-np.sqrt(rolnR)*logstd*r[3],
+                0.,
+                0.,
+                0.,
+                -r[3]*logstd*np.sqrt(1.-rolnR),
+                0.,0.]
+    gfunc5 = Gfunc(gf5, dgdq5)
+    formBeta5 = CompReliab(probdata, gfunc5, analysisopt)
+
+    # limit state 6
+    def gf6(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r[4]-r5lb
+    def dgdq6(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [np.sqrt(rolnR)*logstd*r[4],
+                0.,
+                0.,
+                0.,
+                0.,
+                r[4]*logstd*np.sqrt(1.-rolnR),
+                0.]
+    gfunc6 = Gfunc(gf6, dgdq6)
+    formBeta6 = CompReliab(probdata, gfunc6, analysisopt)
+
+    # limit state 7
+    def gf7(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return r5ub-r[4]
+    def dgdq7(x, param=None):
+        z = np.sqrt(1.-rolnR)*x[1:-1]+np.sqrt(rolnR)*x[0]
+        r = np.exp(logmean+z*logstd)
+        return [-np.sqrt(rolnR)*logstd*r[4],
+                0.,
+                0.,
+                0.,
+                0.,
+                -r[4]*logstd*np.sqrt(1.-rolnR),
+                0.]
+    gfunc7 = Gfunc(gf7, dgdq7)
+    formBeta7 = CompReliab(probdata, gfunc7, analysisopt)
+
+    # system reliability
+    try:
+        sysBetacond = SysReliab([formBeta4, formBeta5, formBeta6, formBeta7], [-4])
+        sysformrescond = sysBetacond.mvn_msr(sysBetacond.syscorr)
+        pcond = 1.-sysformrescond.pf
+        psum = pcond
+        for ieval in range(neval):
             sysformrescond = sysBetacond.mvn_msr(sysBetacond.syscorr)
-            ptotal_safe = 1.-sysformres.pf
-            pcond = 1.-sysformrescond.pf
-            pf = 1.-ptotal_safe/pcond
+            pcurrent = 1.-sysformrescond.pf
+            psum += pcurrent
+            pbest = psum/(ieval+2.)
+            perror = abs(pbest-pcurrent)
+            if perror<=np.maximum(abstol, pbest*reltol):
+                break
+        pf = pbest
     except np.linalg.LinAlgError:
         pf = 0.
     return pf

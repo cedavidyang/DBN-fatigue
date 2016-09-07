@@ -11,7 +11,7 @@ import time
 import datetime
 
 from pyNetica import Node,Network
-from straub2010ex1_funcs import intg2h, msr2m, msr2q, intg2e
+from straub2010ex1_funcs import intg2h, msr2m, msr2q, msr2qcond, intg2e
 
 if __name__ == '__main__':
     # random variables
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     uh = Node("Uh", parents=None, rvname='lognormal', rv=uh)
     e0 = Node("E0", parents=None, rvname='discrete')
     earray = [e0]
-    life = 2; harray=[]
+    life = 1; harray=[]
     for i in range(life):
         h = Node("H"+str(i+1), parents=[uh], rvname='continuous')
         e = Node("E"+str(i+1),parents=[earray[-1],q,h], rvname='discrete')
@@ -60,10 +60,10 @@ if __name__ == '__main__':
 
     # discretize continuous rv
     # r4, m4, r5 and m5
-    r4num = 4+1
-    r5num = 4+1
-    m4num = 4+2
-    m5num = 4+2
+    r4num = 10+1
+    r5num = 10+1
+    m4num = 10+2
+    m5num = 10+2
     m = r5.rv.stats('m'); s = np.sqrt(r5.rv.stats('v'))
     lb = 50.; ub = 250.
     r4bins = np.hstack((0, np.linspace(lb, ub, r4num-1)))
@@ -74,18 +74,18 @@ if __name__ == '__main__':
     r5names = r5.discretize(lb, ub, r5num, infinity='+', bins=r5bins)
     m5names = m5.discretize(lb, ub, m5num, infinity='+-', bins=r5bins)
     # q
-    qnum = 4+1
+    qnum = 10+1
     qlb = 0.; qub = 150.
     qbins = np.hstack(np.linspace(qlb, qub, qnum))
     qnames = q.discretize(qlb, qub, qnum, infinity='+', bins=qbins)
     # uh
-    uhnum = 4+1
+    uhnum = 10+1
     uhlb = 0.; uhub = 150.
     uhbins = np.hstack(np.linspace(uhlb, uhub, uhnum))
     uhnames = uh.discretize(uhlb, uhub, uhnum, infinity='+', bins=uhbins)
     # h
     for h in harray:
-        hnum = 4+1
+        hnum = 10+1
         hlb = 0.; hub = 150.
         hbins = np.hstack(np.linspace(hlb, hub, hnum))
         hnames = h.discretize(hlb, hub, hnum, infinity='+', bins=hbins)
@@ -205,21 +205,24 @@ if __name__ == '__main__':
         rvs = [ur, u1, u2, u3, u4, u5, v]
         trunclb = [rv.lb for rv in truncrvs]
         truncub = [rv.ub for rv in truncrvs]
+        pcond = msr2qcond(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub)
         for k in xrange(nstate-1):
             qbin = [q.bins[k], q.bins[k+1]]
             prob = msr2q(rvnames, rvs, logmean, logstd, rolnR, trunclb, truncub, qbin)
+            if len(probs) and prob>probs[-1]: prob = probs[-1]
             print 'labels: {}, progress: {}%, cdf: {}'.format(np.hstack((label,k)),
-                    float(i)/len(labels)*(nstate-1)*100, prob)
+                    float(i)/len(labels)*100, prob)
             probs.append(prob)
-        probs.append(1.)
-        probs = np.asarray(probs)
-        probs = np.hstack((probs[0], probs[1:]-probs[:-1]))
+        probs = np.hstack((pcond, probs, 0.))/pcond
+        probs[probs>1.] = 1.
+        probs = probs[:-1]-probs[1:]
         q.assign_cpt(probs,label=np.asarray(label),statenames=q.statenames)
     # node E
     nstate = qnum
     for e,h in zip(earray[1:],harray):
         labels = itertools.product(np.arange(2), np.arange(q.nstates()),np.arange(h.nstates()))
         labels = [label for label in labels]
+        i = 0
         for i,label in enumerate(labels):
             truncrvs=[]
             for j,pstate in enumerate(label[1:]):
