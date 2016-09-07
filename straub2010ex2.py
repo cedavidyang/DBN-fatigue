@@ -60,10 +60,10 @@ if __name__ == '__main__':
 
     # discretize continuous rv
     # r4, m4, r5 and m5
-    r4num = 10+1
-    r5num = 10+1
-    m4num = 10+2
-    m5num = 10+2
+    r4num = 20+1
+    r5num = 20+1
+    m4num = 20+2
+    m5num = 20+2
     m = r5.rv.stats('m'); s = np.sqrt(r5.rv.stats('v'))
     lb = 50.; ub = 250.
     r4bins = np.hstack((0, np.linspace(lb, ub, r4num-1)))
@@ -74,18 +74,18 @@ if __name__ == '__main__':
     r5names = r5.discretize(lb, ub, r5num, infinity='+', bins=r5bins)
     m5names = m5.discretize(lb, ub, m5num, infinity='+-', bins=r5bins)
     # q
-    qnum = 10+1
+    qnum = 30+1
     qlb = 0.; qub = 150.
     qbins = np.hstack(np.linspace(qlb, qub, qnum))
     qnames = q.discretize(qlb, qub, qnum, infinity='+', bins=qbins)
     # uh
-    uhnum = 10+1
+    uhnum = 50+1
     uhlb = 0.; uhub = 150.
     uhbins = np.hstack(np.linspace(uhlb, uhub, uhnum))
     uhnames = uh.discretize(uhlb, uhub, uhnum, infinity='+', bins=uhbins)
     # h
     for h in harray:
-        hnum = 10+1
+        hnum = 30+1
         hlb = 0.; hub = 150.
         hbins = np.hstack(np.linspace(hlb, hub, hnum))
         hnames = h.discretize(hlb, hub, hnum, infinity='+', bins=hbins)
@@ -253,11 +253,10 @@ if __name__ == '__main__':
     # save the network
     dbnet.save_net("Straub2010Ex2.dne")
 
-    # # prior belief
-    # beliefs = dbnet.get_node_beliefs(e)
-    # print "Prior Belief:"
-    # for i in xrange(e.nstates()):
-        # print 'The probability of {} is {:f}'.format(e.statenames[i], beliefs[i])
+    print "Prior Belief:"
+    for e in earray[1:]:
+        beliefs = dbnet.get_node_beliefs(e)
+        print 'The fialure probability of {} is {:f}'.format(e.statenames[1], beliefs[1])
 
     # # posterior belief 1
     # m4measure = 50; m5measure=100
