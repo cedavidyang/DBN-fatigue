@@ -51,7 +51,7 @@ if __name__ == '__main__':
     uh = Node("Uh", parents=None, rvname='lognormal', rv=uh)
     e0 = Node("E0", parents=None, rvname='discrete')
     earray = [e0]
-    life = 1; harray=[]
+    life = 5; harray=[]
     for i in range(life):
         h = Node("H"+str(i+1), parents=[uh], rvname='continuous')
         e = Node("E"+str(i+1),parents=[earray[-1],q,h], rvname='discrete')
