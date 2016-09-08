@@ -82,13 +82,13 @@ for i in xrange(y.nstates()):
     print 'The probability of {} is {:f}'.format(y.statenames[i], beliefs[i])
 
 x1beliefs = dbnet.get_node_beliefs(x1)
-statesvalues = x1.statenames.astype(float)
+# statesvalues = x1.statenames.astype(float)
 x1stats = x1.node_stats(x1beliefs)
 print 'The mean of {} is {:f}'.format(x1.name, x1stats[0])
 print 'The std of {} is {:f}'.format(x1.name, np.sqrt(x1stats[1]))
 
 x2beliefs = dbnet.get_node_beliefs(x2)
-statesvalues = x2.statenames.astype(float)
+# statesvalues = x2.statenames.astype(float)
 x2stats = x2.node_stats(x2beliefs, lmd=lmd)
 print 'The mean of {} is {:f}'.format(x2.name, x2stats[0])
 print 'The std of {} is {:f}'.format(x2.name, np.sqrt(x2stats[1]))
