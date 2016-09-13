@@ -2,6 +2,7 @@ from scipy import stats
 from scipy.special import erf
 from scipy.misc import comb
 from scipy.optimize import minimize
+from netica import NATURE_NODE, DECISION_NODE, UTILITY_NODE
 
 import numpy as np
 import sys
@@ -12,7 +13,7 @@ _LMD_DEFAULT = 0.05
 _continuous_dist = ['continuous', 'normal', 'lognormal', 'uniform']
 
 class Node(object):
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, nodekind=NATURE_NODE, **kwargs):
         self.name = name
         try:
             self.parents = kwargs['parents']
@@ -28,6 +29,11 @@ class Node(object):
             self.rv = kwargs['rv']
         except KeyError:
             self.rv = None
+        try:
+            self.func = kwargs['func']
+        except KeyError:
+            self.func = None
+        self.nodekind = nodekind
         self.ptr = None
         self.net = None
         self.cpt = None
@@ -35,15 +41,43 @@ class Node(object):
         self.bins = None
 
 
+    def set_node_kind(self, nodekind):
+        self.nodekind = nodekind
+
+
     def add_to_net(self, net):
         """
         add to network net
         """
-        if np.any(self.cpt==-1):
-            print "CPT of node {} has not been fully assigned".format(self.name)
-            sys.exit(1)
-        self.net = net
-        self.ptr = net.ntc.newnode(self.name, self.cpt.shape[1], net.net)
+        if self.nodekind==NATURE_NODE:
+            if np.any(self.cpt==-1):
+                print "CPT of node {} has not been fully assigned".format(self.name)
+                sys.exit(1)
+            else:
+                self.net = net
+                self.ptr = net.ntc.newnode(self.name, self.cpt.shape[1], net.net)
+        elif self.nodekind==DECISION_NODE:
+            if np.any(self.cpt==-1):
+                print "Statename of decision node {} has not been fully assigned".format(self.name)
+                sys.exit(1)
+            self.net = net
+            self.ptr = net.ntc.newnode(self.name, len(self.statenames), net.net)
+            net.ntc.setnodekind(self.ptr, self.nodekind)
+        elif self.nodekind==UTILITY_NODE:
+            if self.rvname == 'deterministic':
+                if self.func is None:
+                    print "Function of utility node {} has not been fully assigned".format(self.name)
+                    sys.exit(1)
+                self.net = net
+                self.ptr = net.ntc.newnode(self.name, 0, net.net)
+                net.ntc.setnodekind(self.ptr, self.nodekind)
+            else:
+                if np.any(self.cpt==-1):
+                    print "CPT of utility node {} has not been fully assigned".format(self.name)
+                    sys.exit(1)
+                self.net = net
+                self.ptr = net.ntc.newnode(self.name, self.cpt.shape[1], net.net)
+                net.ntc.setnodekind(self.ptr, self.nodekind)
         # set node names
         stringnames = np.array2string(np.array(self.statenames), separator=',')[1:-1]
         stringnames = stringnames.replace('\'', '')
@@ -67,7 +101,7 @@ class Node(object):
             nparent = np.array(self.parents).size
             npstate = np.empty((nparent,), dtype=int); npstate.fill(-1)
             for iparent, parent in enumerate(self.parents):
-                npstate[iparent] = parent.cpt.shape[1]
+                npstate[iparent] = parent.nstates()
             # label list
             import itertools
             command = "labels = list(itertools.product(np.arange(npstate[0])"
@@ -75,16 +109,26 @@ class Node(object):
                 command += ", np.arange({})".format(ipstate)
             command += "))"
             exec command
-            if len(labels) != self.cpt.shape[0]:
-                print "algorithm error"
-                sys.exit(1)
-            for i, label in enumerate(labels):
-                pstates = np.array(label).astype('int32')
-                probs = self.cpt[i,:].astype('float32')
-                self.net.ntc.setnodeprobs(self.ptr, pstates, probs)
+            if self.nodekind == NATURE_NODE:
+                if len(labels) != self.cpt.shape[0]:
+                    print "algorithm error"
+                    sys.exit(1)
+                for i, label in enumerate(labels):
+                    pstates = np.array(label).astype('int32')
+                    probs = self.cpt[i,:].astype('float32')
+                    self.net.ntc.setnodeprobs(self.ptr, pstates, probs)
+            elif self.nodekind == UTILITY_NODE:
+                for i,label in enumerate(labels):
+                    pstates = np.array(label).astype('int32')
+                    util = self.func(pstates)
+                    self.net.ntc.setnodefuncreal(self.ptr, pstates, util)
 
     def nstates(self):
-        return self.cpt.shape[1]
+        try:
+            n = self.cpt.shape[1]
+        except AttributeError:
+            n = len(self.statenames)
+        return n
 
 
     def discretize(self, lb, ub, num, infinity=None, bins=None):
@@ -161,6 +205,12 @@ class Node(object):
 
         return trv
 
+
+    def set_node_state_name(self, statenames):
+        self.statenames = statenames
+
+    def assign_func(self, func):
+        self.func = func
 
     def assign_cpt(self, cpt, label=None, statenames=None, labels=None):
         """ when label is given, cpt is a 1d-array; otherwise, it must be a 2d-array"""

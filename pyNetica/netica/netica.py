@@ -36,14 +36,18 @@ from numpy import array
 
 import platform
 
-
-
 # constants
 MESGLEN = 600
 NO_VISUAL_INFO=0
 NO_WINDOW=0x10
 MINIMIZED_WINDOW=0x30
 REGULAR_WINDOW=0x70
+NATURE_NODE = 1
+CONSTANT_NODE = 2
+DECISION_NODE = 3
+UTILITY_NODE = 4
+DISCONNECTED_NODE = 5
+ADVERSARY_NODE = 6
 
 if 'window' in platform.system().lower():
     from ctypes import windll
@@ -488,19 +492,38 @@ class Netica:
     	self.ln.SetNodeProbs_bn(node_p, parent_states, probs)
 
 
+    def setnodefuncreal(self, node_p, parent_states, realvalue):
+    	parenttype = ndpointer('int32', ndim=1, shape=(len(parent_states),), flags='C')	
+    	self.ln.SetNodeFuncReal_bn.argtypes = [c_void_p, parenttype, c_double 	]
+    	self.ln.SetNodeFuncReal_bn.restype = None
+    	self.ln.SetNodeFuncReal_bn(node_p, parent_states, realvalue)
+
+
     def getnodeprobs(self, node_p, parent_states):
     	parenttype = ndpointer('int32', ndim=1, shape=(len(parent_states),), flags='C')	
     	self.ln.GetNodeProbs_bn.argtypes = [
-    		c_void_p, 
+    		c_void_p,
     		parenttype
     	]
     	self.ln.GetNodeProbs_bn.restype = c_void_p
     	probs = self.ln.GetNodeProbs_bn(node_p, parent_states)
         nstates = self.getnodenumberstates(node_p)
-    	T = ndpointer('float32', ndim=1, shape=(nstates,), flags='C')	
+    	T = ndpointer('float32', ndim=1, shape=(nstates,), flags='C')
 
         if probs:
             return np.array(T(probs))
+        else:
+            return None
+
+
+    def getnodeexpectedutils(self, node_p):
+        self.ln.GetNodeExpectedUtils_bn.argtypes = [c_void_p]
+        self.ln.GetNodeExpectedUtils_bn.restype = c_void_p
+        utils = self.ln.GetNodeExpectedUtils_bn(node_p)
+        nstates = self.getnodenumberstates(node_p)
+    	T = ndpointer('float32', ndim=1, shape=(nstates,), flags='C')
+        if utils:
+            return np.array(T(utils))
         else:
             return None
 
@@ -566,3 +589,36 @@ class Netica:
         self.ln.ReverseLink_bn.restype = None
 
         return self.ln.SwitchNodeParent_bn(link_index, node_p, new_parent)
+
+
+    def setnodekind(self, node_p=None, nodekind=NATURE_NODE):
+        """
+        Sets whether node is a nature, decision, utility or constant node.
+
+        kind must be one of:
+            NATURE_NODE    Bayes nets are composed only of this type (and constant nodes)
+            This is a "chance" or "deterministic" node of an influence diagram
+            DECISION_NODE    Indicates a variable that can be controlled
+            This is a "decision" node of an influence diagram
+            UTILITY_NODE    A variable to maximize the expected value of
+            This is a "value" node of an influence diagram
+            CONSTANT_NODE    A fixed parameter, useful as an equation constant
+            When its value changes, equations should be reconverted to CPT tables, and maybe the net recompiled
+        """
+        self.ln.SetNodeKind_bn.argtypes = [c_void_p, c_int]
+        self.ln.SetNodeKind_bn.restype = None
+
+        return self.ln.SetNodeKind_bn(node_p, nodekind)
+
+
+    def getnodefuncstate(self, node_p, parent_states):
+        parent_states = np.asarray(parent_states, dtype='int32')
+    	parenttype = ndpointer('int32', ndim=1, shape=(len(parent_states),), flags='C')	
+    	self.ln.GetNodeFuncState_bn.argtypes = [
+    		c_void_p,
+    		parenttype
+    	]
+    	self.ln.GetNodeFuncState_bn.restype = c_int
+    	state = self.ln.GetNodeFuncState_bn(node_p, parent_states)
+
+        return state
