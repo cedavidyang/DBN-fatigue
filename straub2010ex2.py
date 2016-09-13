@@ -51,7 +51,7 @@ if __name__ == '__main__':
     uh = Node("Uh", parents=None, rvname='lognormal', rv=uh)
     e0 = Node("E0", parents=None, rvname='discrete')
     earray = [e0]
-    life = 50; harray=[]
+    life = 10; harray=[]
     for i in range(life):
         h = Node("H"+str(i+1), parents=[uh], rvname='continuous')
         e = Node("E"+str(i+1),parents=[earray[-1],q,h], rvname='discrete')
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     # evidence 1: survive up to year 5, h5=80
     print "Evidence 1: survive up to year 5, h5=80"
     for e in earray[1:6]:
-        dbnet.enter_finding(e,1)
+        dbnet.enter_finding(e,0)
     h5ev = 80
     h5 = harray[4]
     h5state = np.searchsorted(h5.bins, h5ev)-1
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     dbnet.retract_netfindings()
     print "Evidence 2: survive up to year 5, hi=30, h5=80"
     for e in earray[1:6]:
-        dbnet.enter_finding(e,1)
+        dbnet.enter_finding(e,0)
     hiev=30
     for h in harray[:4]:
         histate = np.searchsorted(h.bins, hiev)-1
@@ -292,14 +292,14 @@ if __name__ == '__main__':
     beta2 = []
     for e in earray[1:]:
         beliefs = dbnet.get_node_beliefs(e)
-        beta1.append(-stats.norm.ppf(beliefs[1]))
+        beta2.append(-stats.norm.ppf(beliefs[1]))
     uhbeliefs2 = dbnet.get_node_beliefs(uh)
 
     # evidence 3: survive up to year 5, m4=120, m5=120
     dbnet.retract_netfindings()
     print "Evidence 3: survive up to year 5, m4=120, m5=120"
     for e in earray[1:6]:
-        dbnet.enter_finding(e,1)
+        dbnet.enter_finding(e,0)
     m4measure = 120; m5measure=120
     m4state = np.searchsorted(m4.bins, m4measure)-1
     if m4state<0: m4state=0
@@ -317,7 +317,7 @@ if __name__ == '__main__':
     dbnet.retract_netfindings()
     print "Evidence 4: survive up to year 5, m4=180, m5=180, hi=30, h5=80"
     for e in earray[1:6]:
-        dbnet.enter_finding(e,1)
+        dbnet.enter_finding(e,0)
     m4measure = 180; m5measure=180
     m4state = np.searchsorted(m4.bins, m4measure)-1
     if m4state<0: m4state=0
