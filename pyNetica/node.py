@@ -197,7 +197,7 @@ class Node(object):
             else:
                 ledge = bins[ntrunct]
                 redge = bins[ntrunct+1]
-                trv = TrancatedRv(self.rv, ledge, redge, self.rvname)
+                trv = TruncatedRv(self.rv, ledge, redge, self.rvname)
 
         # for discrete rv
         else:
@@ -348,7 +348,7 @@ class Node(object):
         return optres.x, optres
 
 
-class TrancatedRv(object):
+class TruncatedRv(object):
     def __init__(self, rv, lb, ub, rvname=None):
         self.rv = rv
         self.lb = lb
