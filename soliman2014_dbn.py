@@ -19,6 +19,7 @@ if __name__ == '__main__':
     G = 1.12
     lmd = 0.122; beta = -0.305    # w.r.t. mm
     sigmae = 0.2    # mm
+    life=5; lifearray = np.arange(life)+1.
     # random variables
     rv_a0 = stats.norm(0.5, 0.5*0.1)
     rv_m = stats.norm(3.0, 3.0*0.1)
@@ -35,7 +36,7 @@ if __name__ == '__main__':
     node_k = Node("K", parents=[node_m], rvname='continuous')
     node_a0 = Node('a0', parents=None, rvname='normal', rv=rv_a0)
     aarray = [node_a0]
-    life=1; marray=[]
+    marray=[]
     for i in range(life):
         ai = Node("A"+str(i+1), parents=[aarray[-1], node_k, node_m], rvname='continuous')
         mi = Node("M"+str(i+1), parents=[ai], rvname='continuous')
@@ -65,19 +66,6 @@ if __name__ == '__main__':
     else:
         kbins = np.linspace(0, kub, knum)
     knames = node_k.discretize(klb, kub, knum, infinity='+', bins=kbins)
-    # node a and M
-    ainum = 5+1
-    minum = 5+2
-    aismp_prior = aismp_mc(nsmp, life, rv_a0, rv_C, rv_Sre, G, rv_m, rv_Na)
-    ailb = np.percentile(aismp_prior, 5)
-    aiub = np.percentile(aismp_prior, 95)
-    if ailb>0:
-        aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
-    else:
-        aibins = np.linspace(0., aiub, ainum)
-    for node_ai,node_mi in  zip(aarray[1:], marray):
-        ainames = node_ai.discretize(ailb, aiub, knum, infinity='+', bins=aibins)
-        minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aibins)
 
     # calculate and assign CPT
     # node a0
@@ -105,9 +93,22 @@ if __name__ == '__main__':
         node_k.assign_cpt(probs,label=np.asarray(label),statenames=node_k.statenames)
     # node ai
     for ia, (node_ai,node_mi) in enumerate(zip(aarray[1:], marray)):
+        # dynamic discretization of nodes a and M
+        ainum = 5+1
+        minum = 5+2
+        aismp_prior = aismp_mc(nsmp, lifearray[ia], rv_a0, rv_C, rv_Sre, G, rv_m, rv_Na)
+        ailb = np.percentile(aismp_prior, 5)
+        aiub = np.percentile(aismp_prior, 99.9)
+        if ailb>0:
+            aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
+        else:
+            aibins = np.linspace(0., aiub, ainum)
+        ainames = node_ai.discretize(ailb, aiub, knum, infinity='+', bins=aibins)
+        minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aibins)
         nstate = ainum
         # ai = Node("A"+str(i+1), parents=[aarray[-1], node_k, node_m], rvname='continuous')
-        labels = itertools.product(np.arange(aarray[ia].nstates()), np.arange(knum),np.arange(mnum))
+        node_ap = aarray[ia]
+        labels = itertools.product(np.arange(node_ap.nstates()), np.arange(knum),np.arange(mnum))
         labels = [label for label in labels]
         # labels = [(6,3,0), (6,3,1), (6,3,2), (6,3,3), (6,3,4), (6,3,5)]
         for i,label in enumerate(labels):
@@ -118,6 +119,11 @@ if __name__ == '__main__':
             rvs = truncrvs
             probs,smpdb = mc2ai(rvnames, rvs, node_ai.bins, nsmp)
             # probs[:label[0]]=0.
+            # clean Ai states given Ai-1
+            apstate = label[0]
+            aplb = node_ap.bins[apstate]
+            aiubs = node_ai.bins[1:]
+            probs[aiubs<=aplb] = 0.
             probs = probs/np.sum(probs)
             print 'labels: {}, progress: {}%, prob: {}'.format(label,
                 float(i)/len(labels)*100, np.array_str(probs,precision=3))
