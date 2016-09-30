@@ -27,7 +27,7 @@ if __name__ == '__main__':
     rv_C = stats.lognorm(logstd, scale=np.exp(logmean))
     [wblscale, wblc] = wblstats(22.5, 0.1*22.5)
     rv_Sre = stats.weibull_min(wblc, scale=wblscale)
-    [logmean, logstd] = lognstats(1e6, 0.1*1e6)
+    [logmean, logstd] = lognstats(5e6, 0.1*5e6)
     rv_Na = stats.lognorm(logstd, scale=np.exp(logmean))
 
     # network model
@@ -45,19 +45,19 @@ if __name__ == '__main__':
 
     # discretize continuous rv
     # node a0
-    a0num = 5+2
+    a0num = 10+2
     mu,var = rv_a0.stats(); sigma = np.sqrt(var)
     lb = mu-3.*sigma; ub = mu+3.*sigma
     a0bins = np.linspace(lb, ub, a0num-1)
     a0names = node_a0.discretize(lb, ub, a0num, infinity='+-', bins=a0bins)
     # node m
-    mnum = 5+2
+    mnum = 10+2
     mu,var = rv_m.stats(); sigma = np.sqrt(var)
     lb = mu-3.*sigma; ub = mu+3.*sigma
     mbins = np.linspace(lb, ub, mnum-1)
     mnames = node_m.discretize(lb, ub, mnum, infinity='+-', bins=mbins)
     # node k
-    knum = 5+1
+    knum = 20+1
     ksmp_prior = ksmp_mc(nsmp, rv_C, rv_Sre, G, rv_m, rv_Na)
     klb = np.percentile(ksmp_prior, 5)
     kub = np.percentile(ksmp_prior, 95)
@@ -94,8 +94,8 @@ if __name__ == '__main__':
     # node ai
     for ia, (node_ai,node_mi) in enumerate(zip(aarray[1:], marray)):
         # dynamic discretization of nodes a and M
-        ainum = 5+1
-        minum = 5+2
+        ainum = 10+1
+        minum = 10+2
         aismp_prior = aismp_mc(nsmp, lifearray[ia], rv_a0, rv_C, rv_Sre, G, rv_m, rv_Na)
         ailb = np.percentile(aismp_prior, 5)
         aiub = np.percentile(aismp_prior, 99.9)
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     dbnet.save_net("Soliman2014DBN.dne")
 
     # inferences
-    acrit = 50.0
+    acrit = 10.0
     pfarray = []
     for ai in aarray:
         beliefs = dbnet.get_node_beliefs(ai)
