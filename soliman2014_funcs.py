@@ -54,7 +54,7 @@ def ksmp_mc(nsmp, C, Sre, G, m, Na):
     # other variables
     Sresmp = Sre.rvs(size=nsmp)
     Nasmp = Na.rvs(size=nsmp)
-    ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*nsmp
+    ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*Nasmp
     return ksmp
 
 
@@ -73,7 +73,7 @@ def aismp_mc(nsmp, life, a0, C, Sre, G, m, Na):
     a0smp = a0.rvs(size=nsmp)
     Sresmp = Sre.rvs(size=nsmp)
     Nasmp = Na.rvs(size=nsmp)
-    ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*nsmp
+    ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*Nasmp
     # if msmp==2
     aismp = a0smp*np.exp(ksmp*life)
     # if msmp!=2
