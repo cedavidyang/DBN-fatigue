@@ -165,3 +165,13 @@ if __name__ == '__main__':
     dbnet.set_autoupdate()
     # save the network
     dbnet.save_net("Soliman2014DBN.dne")
+
+    # inferences
+    acrit = 50.0
+    pfarray = []
+    for ai in aarray:
+        beliefs = dbnet.get_node_beliefs(ai)
+        aistate = np.searchsorted(ai.bins, acrit)-1
+        aitruncrv = ai.truncate_rv(aistate)
+        lt = np.sum(beliefs[:aistate])+beliefs[aistate]*aitruncrv.cdf(acrit)
+        pfarray.append(1-lt)
