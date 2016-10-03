@@ -169,17 +169,26 @@ if __name__ == '__main__':
     # inferences
     acrit = 10.0
     pfarray = []
-    aimeanarray = []
-    aistdarray = []
     for ai in aarray:
         beliefs = dbnet.get_node_beliefs(ai)
         aistate = np.searchsorted(ai.bins, acrit)-1
         aitruncrv = ai.truncate_rv(aistate)
-        taimean,taivar = aitruncrv.stats(); taimean = taimean[()]; taivar = taivar[()]
+        lt = np.sum(beliefs[:aistate])+beliefs[aistate]*aitruncrv.cdf(acrit)
+        pfarray.append(1-lt)
+
+    aimeanarray = []
+    aistdarray = []
+    for ai in aarray:
+        beliefs = dbnet.get_node_beliefs(ai)
+        ns = ai.nstates()
+        taimean = np.zeros(ns); taivar = np.zeros(ns)
+        for pi in xrange(ns):
+            aitruncrv = ai.truncate_rv(pi)
+            mean,var = aitruncrv.stats(); mean = mean[()]; var = var[()]
+            taimean[pi] = mean
+            taivar[pi] = var
         aimean = np.dot(taimean, beliefs)
         tai2mean = taivar+taimean**2
         ai2mean = np.dot(tai2mean, beliefs)
         aivar = ai2mean-aimean**2; aistd = np.sqrt(aivar)
         aimeanarray.append(aimean); aistdarray.append(aistd)
-        lt = np.sum(beliefs[:aistate])+beliefs[aistate]*aitruncrv.cdf(acrit)
-        pfarray.append(1-lt)
