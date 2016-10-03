@@ -13,6 +13,8 @@ from pyNetica import Node,Network
 from soliman2014_funcs import lognstats, wblstats
 from soliman2014_funcs import ksmp_mc, aismp_mc, msr2k, mc2k, mc2ai
 
+lmd = 0.01
+
 if __name__ == '__main__':
     # parameters
     nsmp = 1e6
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     for i,label in enumerate(labels):
         truncrvs = []
         for j, pstate in enumerate(label):
-            truncrvs.append(node_k.parents[j].truncate_rv(pstate))
+            truncrvs.append(node_k.parents[j].truncate_rv(pstate,lmd=lmd))
         rvnames = ['M', 'C', 'Sre', 'Na']
         rvs = truncrvs+[rv_C, rv_Sre, rv_Na]
         probs = mc2k(rvnames, rvs, node_k.bins, G, nsmp)
@@ -114,7 +116,7 @@ if __name__ == '__main__':
         for i,label in enumerate(labels):
             truncrvs=[]
             for j,pstate in enumerate(label):
-                truncrvs.append(node_ai.parents[j].truncate_rv(pstate))
+                truncrvs.append(node_ai.parents[j].truncate_rv(pstate,lmd=lmd))
             rvnames = ['Ap', 'K', 'M']
             rvs = truncrvs
             probs,smpdb = mc2ai(rvnames, rvs, node_ai.bins, nsmp)
@@ -136,7 +138,7 @@ if __name__ == '__main__':
             truncrvs=[]
             probs=[]
             for j,pstate in enumerate(label):
-                truncrvs.append(node_mi.parents[j].truncate_rv(pstate))
+                truncrvs.append(node_mi.parents[j].truncate_rv(pstate,lmd=lmd))
             rvnames = ['Ai']
             rvs = truncrvs
             aimean = rvs[0].stats('m')[()]
@@ -172,7 +174,7 @@ if __name__ == '__main__':
     for ai in aarray:
         beliefs = dbnet.get_node_beliefs(ai)
         aistate = np.searchsorted(ai.bins, acrit)-1
-        aitruncrv = ai.truncate_rv(aistate)
+        aitruncrv = ai.truncate_rv(aistate,lmd=lmd)
         lt = np.sum(beliefs[:aistate])+beliefs[aistate]*aitruncrv.cdf(acrit)
         pfarray.append(1-lt)
 
@@ -181,14 +183,14 @@ if __name__ == '__main__':
     for ai in aarray:
         beliefs = dbnet.get_node_beliefs(ai)
         ns = ai.nstates()
-        taimean = np.zeros(ns); taivar = np.zeros(ns)
+        taimean = np.zeros(ns); tai2mean = np.zeros(ns)
         for pi in xrange(ns):
-            aitruncrv = ai.truncate_rv(pi)
-            mean,var = aitruncrv.stats(); mean = mean[()]; var = var[()]
-            taimean[pi] = mean
-            taivar[pi] = var
+            aitruncrv = ai.truncate_rv(pi,lmd=lmd)
+            moment1 = aitruncrv.moment(1)
+            moment2 = aitruncrv.moment(2)
+            taimean[pi] = moment1
+            tai2mean[pi] = moment2
         aimean = np.dot(taimean, beliefs)
-        tai2mean = taivar+taimean**2
         ai2mean = np.dot(tai2mean, beliefs)
         aivar = ai2mean-aimean**2; aistd = np.sqrt(aivar)
         aimeanarray.append(aimean); aistdarray.append(aistd)
