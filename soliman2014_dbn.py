@@ -59,7 +59,7 @@ if __name__ == '__main__':
     mbins = np.linspace(lb, ub, mnum-1)
     mnames = node_m.discretize(lb, ub, mnum, infinity='+-', bins=mbins)
     # node k
-    knum = 20+1
+    knum = 10+1
     ksmp_prior = ksmp_mc(nsmp, rv_C, rv_Sre, G, rv_m, rv_Na)
     klb = np.percentile(ksmp_prior, 5)
     kub = np.percentile(ksmp_prior, 95)
@@ -83,11 +83,13 @@ if __name__ == '__main__':
     labels = itertools.product(np.arange(node_m.nstates()))
     labels = [label for label in labels]
     for i,label in enumerate(labels):
-        truncrvs = []
-        for j, pstate in enumerate(label):
-            truncrvs.append(node_k.parents[j].truncate_rv(pstate,lmd=trunclmd))
+        # truncrvs = []
+        # for j, pstate in enumerate(label):
+            # truncrvs.append(node_k.parents[j].truncate_rv(pstate,lmd=trunclmd))
+        # rvnames = ['M', 'C', 'Sre', 'Na']
+        # rvs = truncrvs+[rv_C, rv_Sre, rv_Na]
         rvnames = ['M', 'C', 'Sre', 'Na']
-        rvs = truncrvs+[rv_C, rv_Sre, rv_Na]
+        rvs = [rv_m, rv_C, rv_Sre, rv_Na]
         probs = mc2k(rvnames, rvs, node_k.bins, G, nsmp)
         probs = probs/np.sum(probs,dtype=float)
         print 'labels: {}, progress: {}%, pmf: {}'.format(label,

@@ -44,7 +44,7 @@ def ksmp_mc(nsmp, C, Sre, G, m, Na):
     nsmp = int(nsmp)
     # correlate Csmp and msmp
     msmp = m.rvs(size=nsmp)
-    mparam = m.stats(); mmean = mparam[0][()]; mstd = np.sqrt(mparam[1])
+    mmean,mvar = m.stats(); mmean = mmean[()]; mstd = np.sqrt(mvar[()])
     umsmp = (msmp-mmean)/mstd
     cmean,cvar = C.stats(); cmean = cmean[()]; cstd = np.sqrt(cvar)
     logCmean, logCstd = lognstats(cmean, cstd)
@@ -150,7 +150,7 @@ def mc2k(rvnames, rvs, bins, G, nsmp=1e6):
     m, C, Sre, Na = rvs
     # correlate Csmp and msmp
     msmp = m.rvs(size=nsmp)
-    mparam = m.rv.stats(); mmean = mparam[0][()]; mstd = np.sqrt(mparam[1])
+    mmean,mvar = m.stats(); mmean = mmean[()]; mstd = np.sqrt(mvar[()])
     umsmp = (msmp-mmean)/mstd
     cmean,cvar = C.stats(); cmean = cmean[()]; cstd = np.sqrt(cvar)
     logCmean, logCstd = lognstats(cmean, cstd)
@@ -160,7 +160,7 @@ def mc2k(rvnames, rvs, bins, G, nsmp=1e6):
     # other variables
     Sresmp = Sre.rvs(size=nsmp)
     Nasmp = Na.rvs(size=nsmp)
-    ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*nsmp
+    ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*Nasmp
     ksmp = ksmp[~np.isnan(ksmp)]
     binnum, bins = np.histogram(ksmp, bins)
     binnum[binnum==0] = 0.1
