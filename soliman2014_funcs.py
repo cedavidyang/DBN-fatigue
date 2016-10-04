@@ -55,14 +55,14 @@ def ksmp_mc(nsmp, C, Sre, G, m, Na):
     Sresmp = Sre.rvs(size=nsmp)
     Nasmp = Na.rvs(size=nsmp)
     ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*Nasmp
-    return ksmp
+    return ksmp,msmp
 
 
 def aismp_mc(nsmp, life, a0, C, Sre, G, m, Na):
     nsmp = int(nsmp)
     # correlate Csmp and msmp
     msmp = m.rvs(size=nsmp)
-    mparam = m.stats(); mmean = mparam[0][()]; mstd = np.sqrt(mparam[1])
+    mparam = m.rv.stats(); mmean = mparam[0][()]; mstd = np.sqrt(mparam[1])
     umsmp = (msmp-mmean)/mstd
     cmean,cvar = C.stats(); cmean = cmean[()]; cstd = np.sqrt(cvar)
     logCmean, logCstd = lognstats(cmean, cstd)
@@ -74,12 +74,13 @@ def aismp_mc(nsmp, life, a0, C, Sre, G, m, Na):
     Sresmp = Sre.rvs(size=nsmp)
     Nasmp = Na.rvs(size=nsmp)
     ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*Nasmp
-    # if msmp==2
-    aismp = a0smp*np.exp(ksmp*life)
-    # if msmp!=2
-    tmp = 1.0-msmp/2.
-    indx = msmp!=2
-    aismp[indx] = 1e3*( ksmp[indx]*life*tmp[indx]+(a0smp[indx]*1e-3)**tmp[indx] )**(1./tmp[indx])
+    # # if msmp==2
+    # aismp = a0smp*np.exp(ksmp*life)
+    # # if msmp!=2
+    # tmp = 1.0-msmp/2.
+    # indx = msmp!=2
+    # aismp[indx] = 1e3*( ksmp[indx]*life*tmp[indx]+(a0smp[indx]*1e-3)**tmp[indx] )**(1./tmp[indx])
+    aismp = a0smp+1e3*ksmp*(a0smp*1e-3)**(msmp/2.)
     return aismp
 
 

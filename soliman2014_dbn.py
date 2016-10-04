@@ -13,7 +13,7 @@ from pyNetica import Node,Network
 from soliman2014_funcs import lognstats, wblstats
 from soliman2014_funcs import ksmp_mc, aismp_mc, msr2k, mc2k, mc2ai
 
-trunclmd = 0.01
+trunclmd = 100.
 
 if __name__ == '__main__':
     # parameters
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     mnames = node_m.discretize(lb, ub, mnum, infinity='+-', bins=mbins)
     # node k
     knum = 10+1
-    ksmp_prior = ksmp_mc(nsmp, rv_C, rv_Sre, G, rv_m, rv_Na)
+    ksmp_prior,msmp_prior = ksmp_mc(nsmp, rv_C, rv_Sre, G, rv_m, rv_Na)
     klb = np.percentile(ksmp_prior, 5)
     kub = np.percentile(ksmp_prior, 95)
     if klb>0:
@@ -83,25 +83,28 @@ if __name__ == '__main__':
     labels = itertools.product(np.arange(node_m.nstates()))
     labels = [label for label in labels]
     for i,label in enumerate(labels):
-        # truncrvs = []
-        # for j, pstate in enumerate(label):
-            # truncrvs.append(node_k.parents[j].truncate_rv(pstate,lmd=trunclmd))
-        # rvnames = ['M', 'C', 'Sre', 'Na']
-        # rvs = truncrvs+[rv_C, rv_Sre, rv_Na]
+        truncrvs = []
+        for j, pstate in enumerate(label):
+            truncrvs.append(node_k.parents[j].truncate_rv(pstate,lmd=trunclmd))
         rvnames = ['M', 'C', 'Sre', 'Na']
-        rvs = [rv_m, rv_C, rv_Sre, rv_Na]
+        rvs = truncrvs+[rv_C, rv_Sre, rv_Na]
+        # rvnames = ['M', 'C', 'Sre', 'Na']
+        # rvs = [rv_m, rv_C, rv_Sre, rv_Na]
         probs = mc2k(rvnames, rvs, node_k.bins, G, nsmp)
         probs = probs/np.sum(probs,dtype=float)
         print 'labels: {}, progress: {}%, pmf: {}'.format(label,
             float(i)/len(labels)*100, np.array_str(probs,precision=3))
         node_k.assign_cpt(probs,label=np.asarray(label),statenames=node_k.statenames)
     # node ai
+    aismp_prior = rv_a0.rvs(size=int(nsmp))
     for ia, (node_ai,node_mi) in enumerate(zip(aarray[1:], marray)):
         # dynamic discretization of nodes a and M
+        node_ap = aarray[ia]
         ainum = 10+1
         minum = 10+2
-        aismp_prior = aismp_mc(nsmp, lifearray[ia], rv_a0, rv_C, rv_Sre, G, rv_m, rv_Na)
-        ailb = np.percentile(aismp_prior, 5)
+        aismp_prior = aismp_prior + 1e3*ksmp_prior*(aismp_prior*1e-3)**(msmp_prior/2.)
+        # aismp_prior = aismp_mc(nsmp, lifearray[ia], rv_a0, rv_C, rv_Sre, G, rv_m, rv_Na)
+        ailb = np.percentile(aismp_prior, 0.1)
         aiub = np.percentile(aismp_prior, 99.9)
         if ailb>0:
             aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
@@ -111,10 +114,8 @@ if __name__ == '__main__':
         minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aibins)
         nstate = ainum
         # ai = Node("A"+str(i+1), parents=[aarray[-1], node_k, node_m], rvname='continuous')
-        node_ap = aarray[ia]
         labels = itertools.product(np.arange(node_ap.nstates()), np.arange(knum),np.arange(mnum))
         labels = [label for label in labels]
-        # labels = [(6,3,0), (6,3,1), (6,3,2), (6,3,3), (6,3,4), (6,3,5)]
         for i,label in enumerate(labels):
             truncrvs=[]
             for j,pstate in enumerate(label):
@@ -171,7 +172,7 @@ if __name__ == '__main__':
     dbnet.save_net("Soliman2014DBN.dne")
 
     # inferences
-    acrit = 10.0
+    acrit = 1.0
     pfarray = []
     for ai in aarray:
         beliefs = dbnet.get_node_beliefs(ai)
