@@ -410,7 +410,12 @@ class TruncatedRv(object):
             if order == 1:
                 mm = k0*(np.exp(-k2**2)-np.exp(-k1**2))+mu*mm0
             elif order == 2:
-                mm = k0*((l+u)*np.exp(-k2**2)-(u+mu)*np.exp(-k1**2))+(mu**2+sgm**2)*mm0
+                if np.isposinf(k1):
+                    mm = k0*((l+mu)*np.exp(-k2**2)-0.0)+(mu**2+sgm**2)*mm0
+                elif np.isneginf(k2):
+                    mm = k0*(0.0-(u+mu)*np.exp(-k1**2))+(mu**2+sgm**2)*mm0
+                else:
+                    mm = k0*((l+mu)*np.exp(-k2**2)-(u+mu)*np.exp(-k1**2))+(mu**2+sgm**2)*mm0
             elif order == 3:
                 mm = k0*((2*sgm**2+mu**2+l*mu+l**2)*np.exp(-k2**2) -
                          (2*sgm**2+mu**2+u*mu+u**2)*np.exp(-k1**2))+mu*(mu**2+3*sgm**2)*mm0
