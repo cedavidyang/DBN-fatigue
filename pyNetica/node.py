@@ -9,7 +9,7 @@ import sys
 import warnings
 warnings.filterwarnings('ignore', r'divide by zero encountered in log')
 
-_LMD_DEFAULT = 0.05
+_LMD_DEFAULT = 100.
 _continuous_dist = ['continuous', 'normal', 'lognormal', 'uniform']
 
 class Node(object):
@@ -43,6 +43,16 @@ class Node(object):
 
     def set_node_kind(self, nodekind):
         self.nodekind = nodekind
+    def set_node_ptr(self, ptr):
+        self.ptr = ptr
+    def set_node_state_name(self, statenames):
+        self.statenames = statenames
+    def set_bins(self, bins):
+        self.bins = bins
+    def set_rv(self, rv):
+        self.rv = rv
+    def set_rvname(self, rvname):
+        self.rvname = rvname
 
 
     def add_to_net(self, net):
@@ -93,9 +103,10 @@ class Node(object):
             sys.exit(1)
         # set node probs
         if self.parents is None:
-            pstates = np.empty((1,), dtype='int32')
-            probs = self.cpt[-1].astype('float32')
-            self.net.ntc.setnodeprobs (self.ptr, pstates, probs)
+            if self.nodekind == NATURE_NODE:
+                pstates = np.empty((1,), dtype='int32')
+                probs = self.cpt[-1].astype('float32')
+                self.net.ntc.setnodeprobs (self.ptr, pstates, probs)
         else:
             # from icpt to label
             nparent = np.array(self.parents).size
@@ -206,9 +217,6 @@ class Node(object):
         return trv
 
 
-    def set_node_state_name(self, statenames):
-        self.statenames = statenames
-
     def assign_func(self, func):
         self.func = func
 
@@ -235,9 +243,9 @@ class Node(object):
             #label to cpt index
             for iparent, parent in enumerate(self.parents):
                 try:
-                    npstate[iparent] = parent.cpt.shape[1]
+                    npstate[iparent] = parent.nstates()
                 except IndexError:
-                    print "parent {} of node {} must be assigned to a cpt".format(parent.name, self.name)
+                    print "parent {} of node {} must be discretized".format(parent.name, self.name)
                     sys.exit(1)
             #if never assigned, initialize cpt
             if self.cpt is None:
