@@ -2,17 +2,42 @@
 from ctypes import c_int
 from netica import Netica
 from netica import NATURE_NODE, DECISION_NODE, UTILITY_NODE
+from node import Node
 import numpy as np
 import sys
 
 class Network(object):
-    def __init__(self, name, lic=None):
-        self.name = name
-        self.ntc = Netica()
-        self.env = self.ntc.newenv(lic)
-        self.ntc.initenv(self.env)
-        self.net = self.ntc.newnet(name, self.env)
-        self.nodes = []
+    def __init__(self, name, lic=None, file=None):
+        if file is None:
+            self.name = name
+            self.ntc = Netica()
+            self.env = self.ntc.newenv(lic)
+            self.ntc.initenv(self.env)
+            self.net = self.ntc.newnet(name, self.env)
+            self.nodes = []
+        else:
+            self.name = name
+            self.ntc = Netica()
+            self.env = self.ntc.newenv(lic)
+            self.ntc.initenv(self.env)
+            self.net = self.ntc.opennet(self.env, file)
+            nodelist_p = self.ntc.getnetnodes(self.net)
+            numnode = self.ntc.lengthnodelist(nodelist_p)
+            self.nodes = []
+            for i in range(numnode):
+                nodei_p = self.ntc.nthnode(nodelist_p, i)
+                nodename = self.ntc.getnodename(nodei_p)
+                statename = 'init'; statenames = []; istate = 0
+                while statename!='error':
+                    statename = self.ntc.getnodestatename(nodei_p, istate)
+                    statenames.append(statename)
+                    istate += 1
+                statenames = statenames[:-1]
+                # default: no parents and continuous: therefore not the original nodes
+                nodei = Node(nodename, parents=[], rvname='continuous')
+                nodei.set_node_ptr(nodei_p)
+                nodei.set_node_state_name(statenames)
+                self.nodes.append(nodei)
 
 
     def add_nodes(self, nodes):
@@ -85,3 +110,17 @@ class Network(object):
 
     def get_node_funcstate(self, node, parentstate):
         return self.ntc.getnodefuncstate(node.ptr, parentstate)
+
+    def find_nodenamed(self, nodename):
+        """
+        find node by node name
+        """
+        found = False
+        for i,node in enumerate(self.nodes):
+            if node.name == nodename:
+                found =True
+                break
+        if found:
+            return node
+        else:
+            return 'error'
