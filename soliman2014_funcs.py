@@ -164,7 +164,7 @@ def mc2k(rvnames, rvs, bins, G, nsmp=1e6):
     ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*Nasmp
     ksmp = ksmp[~np.isnan(ksmp)]
     binnum, bins = np.histogram(ksmp, bins)
-    binnum[binnum==0] = 0.1
+    # binnum[binnum==0] = 0.1
     probs = binnum/np.sum(binnum,dtype=float)
     return probs
 
@@ -189,6 +189,6 @@ def mc2ai(rvnames, rvs, bins, nsmp=1e6):
     # bins[np.isneginf(bins)]=np.nanmin(aismp)
     # bins[np.isposinf(bins)]=np.nanmax(aismp)
     binnum, bins = np.histogram(aismp, bins)
-    binnum[binnum==0] = 0.1
+    # binnum[binnum==0] = 0.1
     probs = binnum/np.sum(binnum,dtype=float)
     return probs, {'aismp':aismp, 'apsmp':apsmp, 'ksmp':ksmp, 'msmp':msmp}

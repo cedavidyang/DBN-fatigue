@@ -104,8 +104,8 @@ if __name__ == '__main__':
         minum = 10+2
         aismp_prior = aismp_prior + 1e3*ksmp_prior*(aismp_prior*1e-3)**(msmp_prior/2.)
         # aismp_prior = aismp_mc(nsmp, lifearray[ia], rv_a0, rv_C, rv_Sre, G, rv_m, rv_Na)
-        ailb = np.percentile(aismp_prior, 0.1)
-        aiub = np.percentile(aismp_prior, 99.9)
+        ailb = np.percentile(aismp_prior, 0.01)
+        aiub = np.percentile(aismp_prior, 99.99)
         if ailb>0:
             aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
         else:
