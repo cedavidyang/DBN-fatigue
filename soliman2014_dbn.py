@@ -110,7 +110,7 @@ if __name__ == '__main__':
             aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
         else:
             aibins = np.linspace(0., aiub, ainum)
-        ainames = node_ai.discretize(ailb, aiub, knum, infinity='+', bins=aibins)
+        ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aibins)
         minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aibins)
         nstate = ainum
         # ai = Node("A"+str(i+1), parents=[aarray[-1], node_k, node_m], rvname='continuous')
