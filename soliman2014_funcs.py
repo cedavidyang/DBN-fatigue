@@ -58,11 +58,11 @@ def ksmp_mc(nsmp, C, Sre, G, m, Na):
     return ksmp,msmp
 
 
-def aismp_mc(nsmp, life, a0, C, Sre, G, m, Na):
+def aismp_mc(nsmp, life, a0smp, C, Sre, G, m, Na, acrit):
     nsmp = int(nsmp)
     # correlate Csmp and msmp
     msmp = m.rvs(size=nsmp)
-    mparam = m.rv.stats(); mmean = mparam[0][()]; mstd = np.sqrt(mparam[1])
+    mparam = m.stats(); mmean = mparam[0][()]; mstd = np.sqrt(mparam[1])
     umsmp = (msmp-mmean)/mstd
     cmean,cvar = C.stats(); cmean = cmean[()]; cstd = np.sqrt(cvar)
     logCmean, logCstd = lognstats(cmean, cstd)
@@ -70,17 +70,18 @@ def aismp_mc(nsmp, life, a0, C, Sre, G, m, Na):
     uLogCsmp = -np.sqrt(rolnR**2)*umsmp-np.sqrt(1-rolnR**2)*uLogCsmp0    #correlated logC
     Csmp = np.exp(logCmean+uLogCsmp*logCstd)
     # other variables
-    a0smp = a0.rvs(size=nsmp)
     Sresmp = Sre.rvs(size=nsmp)
     Nasmp = Na.rvs(size=nsmp)
     ksmp = Csmp*(Sresmp**msmp)*(G**msmp)*(np.pi**(msmp/2.))*Nasmp
-    # # if msmp==2
-    # aismp = a0smp*np.exp(ksmp*life)
-    # # if msmp!=2
-    # tmp = 1.0-msmp/2.
-    # indx = msmp!=2
-    # aismp[indx] = 1e3*( ksmp[indx]*life*tmp[indx]+(a0smp[indx]*1e-3)**tmp[indx] )**(1./tmp[indx])
-    aismp = a0smp+1e3*ksmp*(a0smp*1e-3)**(msmp/2.)
+    # if msmp==2
+    aismp = a0smp*np.exp(ksmp*life)
+    # if msmp!=2
+    tmp = 1.0-msmp/2.
+    indx = msmp!=2
+    diff = ksmp[indx]*life*tmp[indx]+(a0smp[indx])**tmp[indx]
+    aismp[indx&(diff>=0)] = diff[indx&(diff>=0)]**(1./tmp[indx&(diff>=0)])
+    aismp[indx&(diff<0)] = acrit + 1e-3
+    aismp[aismp>acrit] = acrit + 1e-3
     return aismp
 
 
@@ -169,7 +170,7 @@ def mc2k(rvnames, rvs, bins, G, nsmp=1e6):
     return probs
 
 
-def mc2ai(rvnames, rvs, bins, nsmp=1e6):
+def mc2ai(rvnames, rvs, bins, acrit, nsmp=1e6):
     nsmp = int(nsmp)
     # parameters
     Ap, K, M = rvs
@@ -177,18 +178,16 @@ def mc2ai(rvnames, rvs, bins, nsmp=1e6):
     apsmp = Ap.rvs(size=nsmp)
     ksmp = K.rvs(size=nsmp)
     msmp = M.rvs(size=nsmp)
-    # life = 1
-    # # if msmp==2
-    # aismp = apsmp*np.exp(ksmp*life)
-    # # if msmp!=2
-    # tmp = 1.0-msmp/2.
-    # indx = msmp!=2
-    # aismp[indx] = 1e3*( ksmp[indx]*life*tmp[indx]+(apsmp[indx]*1e-3)**tmp[indx] )**(1./tmp[indx])
-    aismp = apsmp+1e3*ksmp*(apsmp*1e-3)**(msmp/2.)
-    # aismp[np.isposinf(aismp)] = np.nanmax(aismp)
-    # bins[np.isneginf(bins)]=np.nanmin(aismp)
-    # bins[np.isposinf(bins)]=np.nanmax(aismp)
+    life = 1
+    # if msmp==2
+    aismp = apsmp*np.exp(ksmp*life)
+    # if msmp!=2
+    tmp = 1.0-msmp/2.
+    indx = msmp!=2
+    diff = ksmp[indx]*life*tmp[indx]+(apsmp[indx])**tmp[indx]
+    aismp[indx&(diff>=0)] = diff[indx&(diff>=0)]**(1./tmp[indx&(diff>=0)])
+    aismp[indx&(diff<0)] = acrit + 1e-3
+    aismp[aismp>acrit] = acrit + 1e-3
     binnum, bins = np.histogram(aismp, bins)
-    # binnum[binnum==0] = 0.1
     probs = binnum/np.sum(binnum,dtype=float)
     return probs, {'aismp':aismp, 'apsmp':apsmp, 'ksmp':ksmp, 'msmp':msmp}

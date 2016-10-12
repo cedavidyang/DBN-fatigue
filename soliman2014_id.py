@@ -16,15 +16,16 @@ from soliman2014_funcs import ksmp_mc, aismp_mc, msr2k, mc2k, mc2ai
 
 # parameters
 trunclmd = 100.
-acrit = 0.7
+acrit = 50.
 nsmp = int(1e6)
 G = 1.12
 lmd1 = -0.968; beta1 = -0.571    # w.r.t. mm
-lmd2 =  0.122; beta2 = -0.305    # w.r.t. mm
-lmd3 =  0.829; beta3 = -0.423    # w.r.t. mm
+lmd2 = 0.122; beta2 = -0.305    # w.r.t. mm
+lmd3 = 0.829; beta3 = -0.423    # w.r.t. mm
 sigmae = 0.2    # mm
 life=5; lifearray = np.arange(life)+1.
-inspyear = (lifearray==2)
+# life=25; lifearray = np.arange(5., life+1., 5.)
+inspyear = (lifearray==3)
 Cfail = 1000.
 Cinit = 50.
 
@@ -48,7 +49,6 @@ def create_node_a(name, parents, ainum, ailb, aiub, aiedges, node_repair=None, a
     for i,label in enumerate(labels):
         if len(label)==4 and label[-1] == 1:
             binnum,dummy = np.histogram(asmp0, aibins)
-            binnum[binnum==0] = 1e-12
             probs = binnum/np.sum(binnum, dtype=float)
             node_ai.assign_cpt(probs,label=np.asarray(label),statenames=node_ai.statenames)
         else:
@@ -57,7 +57,7 @@ def create_node_a(name, parents, ainum, ailb, aiub, aiedges, node_repair=None, a
                 truncrvs.append(node_ai.parents[j].truncate_rv(pstate,lmd=trunclmd))
             rvnames = ['Ap', 'K', 'M']
             rvs = truncrvs[:3]
-            probs,smpdb = mc2ai(rvnames, rvs, node_ai.bins, nsmp)
+            probs,smpdb = mc2ai(rvnames, rvs, node_ai.bins, acrit, nsmp=nsmp)
             # clean Ai states given Ai-1
             apstate = label[0]
             aplb = node_ap.bins[apstate]
@@ -134,18 +134,19 @@ def inspection_utility(pstate):
     if pstate==0:
         return 0.
     else:
-        return -(pstate+2.0)
+        return -(6.0-pstate)
 
 
 if __name__ == '__main__':
     # random variables
     rv_a0 = stats.norm(0.5, 0.5*0.1)
     rv_m = stats.norm(3.0, 3.0*0.1)
-    [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    # [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    [logmean, logstd] = lognstats(4.5e-13, 0.3*4.5e-13)
     rv_C = stats.lognorm(logstd, scale=np.exp(logmean))
     [wblscale, wblc] = wblstats(22.5, 0.1*22.5)
     rv_Sre = stats.weibull_min(wblc, scale=wblscale)
-    [logmean, logstd] = lognstats(5e6, 0.1*5e6)
+    [logmean, logstd] = lognstats(2e6, 0.1*2e6)
     rv_Na = stats.lognorm(logstd, scale=np.exp(logmean))
 
     # network model
@@ -213,13 +214,14 @@ if __name__ == '__main__':
     for ia,rp in enumerate(inspyear):
         ainum = 5+1
         minum = 5+2
-        aismp_prior = aismp_prior + 1e3*ksmp_prior*(aismp_prior*1e-3)**(msmp_prior/2.)
-        ailb = np.percentile(aismp_prior, 0.1)
-        aiub = np.percentile(aismp_prior, 99.9)
+        aismp_prior = aismp_mc(nsmp, 1., aismp_prior, rv_C, rv_Sre, G, rv_m, rv_Na, acrit)
+        ailb = np.percentile(aismp_prior[aismp_prior<acrit], 0.1)
+        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99.9)
         if ailb>0:
-            aiedges = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
+            aiedges = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
         else:
-            aiedges = np.linspace(0., aiub, ainum)
+            aiedges = np.linspace(0., aiub, ainum-1.)
+        aiedges = np.hstack((aiedges,acrit+1e-3))
         if ia == 0:
             node_ai = create_node_a("A"+str(ia+1), [aarray[-1], node_k, node_m], ainum, ailb, aiub, aiedges)
             aarray.append(node_ai)
@@ -322,4 +324,4 @@ if __name__ == '__main__':
     dummy = dbnet.get_node_expectedutils(node_repair)
     decision = dbnet.get_node_funcstate(node_repair, [2,4])
     print 'If the inspection decision is {} and meausre is {}, the best repair decision is {}.\n'.format(
-            node_insp.statenames[2], marray[0].statenamer[4], node_repair.statenames[decision])
+            node_insp.statenames[2], marray[0].statenames[4], node_repair.statenames[decision])

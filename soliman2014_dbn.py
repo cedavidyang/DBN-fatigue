@@ -25,11 +25,12 @@ if __name__ == '__main__':
     # random variables
     rv_a0 = stats.norm(0.5, 0.5*0.1)
     rv_m = stats.norm(3.0, 3.0*0.1)
-    [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    # [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    [logmean, logstd] = lognstats(4.5e-13, 0.3*4.5e-13)
     rv_C = stats.lognorm(logstd, scale=np.exp(logmean))
     [wblscale, wblc] = wblstats(22.5, 0.1*22.5)
     rv_Sre = stats.weibull_min(wblc, scale=wblscale)
-    [logmean, logstd] = lognstats(5e6, 0.1*5e6)
+    [logmean, logstd] = lognstats(2e6, 0.1*2e6)
     rv_Na = stats.lognorm(logstd, scale=np.exp(logmean))
 
     # network model
@@ -102,10 +103,9 @@ if __name__ == '__main__':
         node_ap = aarray[ia]
         ainum = 10+1
         minum = 10+2
-        aismp_prior = aismp_prior + 1e3*ksmp_prior*(aismp_prior*1e-3)**(msmp_prior/2.)
-        # aismp_prior = aismp_mc(nsmp, lifearray[ia], rv_a0, rv_C, rv_Sre, G, rv_m, rv_Na)
-        ailb = np.percentile(aismp_prior, 0.01)
-        aiub = np.percentile(aismp_prior, 99.99)
+        aismp_prior = aismp_mc(nsmp, 1., aismp_prior, rv_C, rv_Sre, G, rv_m, rv_Na, acrit)
+        ailb = np.percentile(aismp_prior, 0.1)
+        aiub = np.percentile(aismp_prior, 99.9)
         if ailb>0:
             aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
         else:
@@ -122,8 +122,7 @@ if __name__ == '__main__':
                 truncrvs.append(node_ai.parents[j].truncate_rv(pstate,lmd=trunclmd))
             rvnames = ['Ap', 'K', 'M']
             rvs = truncrvs
-            probs,smpdb = mc2ai(rvnames, rvs, node_ai.bins, nsmp)
-            # probs[:label[0]]=0.
+            probs,smpdb = mc2ai(rvnames, rvs, node_ai.bins, acrit, nsmp=nsmp)
             # clean Ai states given Ai-1
             apstate = label[0]
             aplb = node_ap.bins[apstate]
