@@ -16,7 +16,7 @@ from soliman2014_funcs import ksmp_mc, aismp_mc, msr2k, mc2k, mc2ai
 
 # parameters
 trunclmd = 100.
-acrit = 0.8
+acrit = 0.7
 nsmp = int(1e6)
 G = 1.12
 lmd1 = -0.968; beta1 = -0.571    # w.r.t. mm
@@ -24,7 +24,7 @@ lmd2 =  0.122; beta2 = -0.305    # w.r.t. mm
 lmd3 =  0.829; beta3 = -0.423    # w.r.t. mm
 sigmae = 0.2    # mm
 life=5; lifearray = np.arange(life)+1.
-inspyear = (lifearray==4)
+inspyear = (lifearray==2)
 Cfail = 1000.
 Cinit = 50.
 
@@ -102,7 +102,7 @@ def create_node_mi(name, parents, minum, milb, miub, mibins):
     return node_mi
 
 
-def set_node_repair(node_repair, acrit):
+def set_node_repair_dependent(node_repair, acrit):
     node_insp = node_repair.parents[0]
     node_mi = node_repair.parents[1]
     nstate = node_repair.nstates()
@@ -242,26 +242,29 @@ if __name__ == '__main__':
             node_ui.set_node_kind(UTILITY_NODE)
             node_ui.assign_func(inspection_utility)
             # node repair
-            node_repair = Node("Repair"+str(ia+1), parents=[node_insp, node_mi], rvname='discrete')
+            node_repair = Node("Repair"+str(ia+1), parents=[node_insp], rvname='discrete')
             node_repair.set_node_kind(DECISION_NODE)
             node_repair.set_node_state_name(['no', 'repair'])
-            set_node_repair(node_repair,acrit)
             # node ur
             node_ur = Node("Util_Repair"+str(ia+1), parents=[node_repair, node_ai], rvname='deterministic')
             node_ur.set_node_kind(UTILITY_NODE)
-            def repair_utility(pstate):
+            def repair_utility(pstate, node_ai=node_ai):
                 repairstate, aistate = pstate
+                acrstate = np.searchsorted(node_ai.bins, acrit)-1
                 truncrv_ai = node_ai.truncate_rv(aistate, lmd=trunclmd)
-                aimean = truncrv_ai.stats('m')[()]
-                if repairstate == 0 and aimean<acrit:
+                if aistate<acrstate and repairstate == 0:
                     utilr = 0.
-                elif repairstate == 0 and aimean>acrit:
-                    utilr = -Cfail
-                elif repairstate == 1 and aimean<acrit:
-                    rhoa = aimean/acrit
-                    utilr = -(1.+1.-rhoa**0.5)*Cinit
-                elif repairstate == 1 and aimean>acrit:
+                elif aistate<acrstate and repairstate == 1:
                     utilr = -Cinit
+                elif aistate>acrstate and repairstate == 0:
+                    utilr = 0.
+                elif aistate>acrstate and repairstate == 1:
+                    utilr = -Cfail
+                elif aistate == acrstate and repairstate == 0:
+                    utilr = 0.
+                elif aistate == acrstate and repairstate == 1:
+                    pf = 1.-truncrv_ai.cdf(acrit)
+                    utilr = -pf*Cfail-(1.-pf)*Cinit
                 return utilr
             node_ur.assign_func(repair_utility)
             aarray.append(node_ai)
@@ -275,12 +278,31 @@ if __name__ == '__main__':
             aarray.append(node_ai)
         print 'year {}'.format(ia+1)
 
+    # lifetime failure risk
+    node_al = aarray[-1]
+    node_fr = Node("Failure_Risk"+str(ia+1), parents=[node_al], rvname='deterministic')
+    node_fr.set_node_kind(UTILITY_NODE)
+    def failure_risk(pstate, node_al=node_al):
+        aistate = pstate
+        acrstate = np.searchsorted(node_al.bins, acrit)-1
+        truncrv_ai = node_ai.truncate_rv(aistate, lmd=trunclmd)
+        if aistate<acrstate:
+            utilr = 0.
+        elif aistate>acrstate:
+            utilr = -Cfail
+        elif aistate == acrstate:
+            pf = 1.-truncrv_ai.cdf(acrit)
+            utilr = -pf*Cfail
+        return utilr
+    node_fr.assign_func(failure_risk)
+
+
 
     # create new network
     dbnet = Network("Soliman2014InfDiag")
 
     # add nodes to network
-    dbnet.add_nodes([node_m, node_k]+aarray+marray+insparray+uiarray+rarray+urarray)
+    dbnet.add_nodes([node_m, node_k]+aarray+marray+insparray+uiarray+rarray+urarray+[node_fr])
     # add link: must be prior to defining nodes
     dbnet.add_link()
     # define nodes
@@ -300,4 +322,4 @@ if __name__ == '__main__':
     dummy = dbnet.get_node_expectedutils(node_repair)
     decision = dbnet.get_node_funcstate(node_repair, [2,4])
     print 'If the inspection decision is {} and meausre is {}, the best repair decision is {}.\n'.format(
-            node_insp.statenames[2], marray[3][4], node_repair.statenames[decision])
+            node_insp.statenames[2], marray[0].statenamer[4], node_repair.statenames[decision])
