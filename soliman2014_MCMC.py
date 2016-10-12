@@ -10,17 +10,19 @@ if __name__ == '__main__':
     G = 1.12
     lmd = 0.122; beta = -0.305    # w.r.t. mm
     sigmae = 0.2    # mm
+    acrit = 5.
     life=5; lifearray = np.arange(life)+1.
     # random variables
     a0mean,a0std = 0.5, 0.5*0.1
     rv_a0 = stats.norm(a0mean,a0std)
     mmean,mstd = 3.0, 3.0*0.1
     rv_m = stats.norm(mmean, mstd)
-    [logCmean, logCstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    # [logCmean, logCstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    [logCmean, logCstd] = lognstats(4.5e-13, 0.3*4.5e-13)
     rv_C = stats.lognorm(logCstd, scale=np.exp(logCmean))
     [wblscale, wblc] = wblstats(22.5, 0.1*22.5)
     rv_Sre = stats.weibull_min(wblc, scale=wblscale)
-    [logNamean, logNastd] = lognstats(5e6, 0.1*5e6)
+    [logNamean, logNastd] = lognstats(2e6, 0.1*2e6)
     rv_Na = stats.lognorm(logNastd, scale=np.exp(logNamean))
     # crude MC
     # correlate Csmp and msmp
@@ -36,10 +38,19 @@ if __name__ == '__main__':
     # time series
     asmparray = [rv_a0.rvs(size=nsmp)]
     for t in lifearray:
-        asmp = asmparray[-1] + 1e3*ksmp*(asmparray[-1]*1e-3)**(msmp/2.)
-        asmparray.append(asmp)
+        # asmp = asmparray[-1] + 1e3*ksmp*(asmparray[-1]*1e-3)**(msmp/2.)
+        # if msmp==2
+        a0smp = asmparray[-1]
+        aismp = a0smp*np.exp(ksmp*life)
+        # if msmp!=2
+        tmp = 1.0-msmp/2.
+        indx = msmp!=2
+        diff = ksmp[indx]*life*tmp[indx]+(a0smp[indx])**tmp[indx]
+        aismp[indx&(diff>=0)] = diff[indx&(diff>=0)]**(1./tmp[indx&(diff>=0)])
+        aismp[indx&(diff<0)] = acrit + 1e-3
+        aismp[aismp>acrit] = acrit + 1e-3
+        asmparray.append(aismp)
     # failure probability
-    acrit = 0.6
     pfarray = []
     for asmp in asmparray:
         pf = np.sum(asmp>acrit,dtype=float)/nsmp
@@ -49,7 +60,7 @@ if __name__ == '__main__':
     def make_pymc_model():
         # data
         madata = np.empty(life, dtype=object)
-        madata[-1] = 1.0
+        madata[2] = 2.0
 
         # parameters
         cs = pymc.Normal('CS', mu=0., tau=1., plot=False)
@@ -75,7 +86,18 @@ if __name__ == '__main__':
         for i in np.arange(1,life+1):
             @pymc.deterministic(name='A{}'.format(i), plot=True)
             def ai(kappa=kappa, m=m, ap=aarray[i-1]):
-                aiout = ap+1e3*kappa*(ap*1e-3)**(m/2.)
+                # aiout = ap+1e3*kappa*(ap*1e-3)**(m/2.)
+                if m==2:
+                    aiout = ap*np.exp(kappa*life)
+                else:
+                    tmp = 1.0-m/2.
+                    diff = kappa*1.*tmp+ap**tmp
+                    if diff>=0:
+                        aiout = diff**(1./tmp)
+                    else:
+                        aiout = acrit + 1e-3
+                    if aiout>acrit:
+                        aiout = acrit + 1e-3
                 return aiout
             aarray[i] = ai
 

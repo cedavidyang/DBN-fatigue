@@ -21,6 +21,7 @@ if __name__ == '__main__':
     G = 1.12
     lmd = 0.122; beta = -0.305    # w.r.t. mm
     sigmae = 0.2    # mm
+    acrit = 5.
     life=5; lifearray = np.arange(life)+1.
     # random variables
     rv_a0 = stats.norm(0.5, 0.5*0.1)
@@ -171,7 +172,6 @@ if __name__ == '__main__':
     dbnet.save_net("Soliman2014DBN.dne")
 
     # inferences
-    acrit = 1.0
     pfarray = []
     for ai in aarray:
         beliefs = dbnet.get_node_beliefs(ai)

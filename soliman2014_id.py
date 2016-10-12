@@ -16,7 +16,7 @@ from soliman2014_funcs import ksmp_mc, aismp_mc, msr2k, mc2k, mc2ai
 
 # parameters
 trunclmd = 100.
-acrit = 50.
+acrit = 5.
 nsmp = int(1e6)
 G = 1.12
 lmd1 = -0.968; beta1 = -0.571    # w.r.t. mm
