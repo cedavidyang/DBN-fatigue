@@ -49,19 +49,19 @@ if __name__ == '__main__':
 
     # discretize continuous rv
     # node a0
-    a0num = 10+2
+    a0num = 20+2
     mu,var = rv_a0.stats(); sigma = np.sqrt(var)
     lb = mu-3.*sigma; ub = mu+3.*sigma
     a0bins = np.linspace(lb, ub, a0num-1)
     a0names = node_a0.discretize(lb, ub, a0num, infinity='+-', bins=a0bins)
     # node m
-    mnum = 10+2
+    mnum = 20+2
     mu,var = rv_m.stats(); sigma = np.sqrt(var)
     lb = mu-3.*sigma; ub = mu+3.*sigma
     mbins = np.linspace(lb, ub, mnum-1)
     mnames = node_m.discretize(lb, ub, mnum, infinity='+-', bins=mbins)
     # node k
-    knum = 10+1
+    knum = 20+1
     ksmp_prior,msmp_prior = ksmp_mc(nsmp, rv_C, rv_Sre, G, rv_m, rv_Na)
     klb = np.percentile(ksmp_prior, 5)
     kub = np.percentile(ksmp_prior, 95)
@@ -102,11 +102,11 @@ if __name__ == '__main__':
     for ia, (node_ai,node_mi) in enumerate(zip(aarray[1:], marray)):
         # dynamic discretization of nodes a and M
         node_ap = aarray[ia]
-        ainum = 10+1
-        minum = 10+2
+        ainum = 20+1
+        minum = 20+2
         aismp_prior = aismp_mc(nsmp, 1., aismp_prior, rv_C, rv_Sre, G, rv_m, rv_Na, acrit)
         ailb = np.percentile(aismp_prior[aismp_prior<acrit], 0.1)
-        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99.9)
+        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99)
         if ailb>0:
             aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
         else:
