@@ -91,6 +91,7 @@ if __name__ == '__main__':
                     aiout = ap*np.exp(kappa*1.)
                 else:
                     tmp = 1.0-m/2.
+                    if ap<=0: ap=1e-12
                     diff = kappa*1.*tmp+ap**tmp
                     if diff>=0:
                         aiout = diff**(1./tmp)
