@@ -40,12 +40,12 @@ if __name__ == '__main__':
     for t in lifearray:
         # asmp = asmparray[-1] + 1e3*ksmp*(asmparray[-1]*1e-3)**(msmp/2.)
         # if msmp==2
-        a0smp = asmparray[-1]
-        aismp = a0smp*np.exp(ksmp*life)
+        apsmp = asmparray[-1]
+        aismp = apsmp*np.exp(ksmp*1.)
         # if msmp!=2
         tmp = 1.0-msmp/2.
         indx = msmp!=2
-        diff = ksmp[indx]*life*tmp[indx]+(a0smp[indx])**tmp[indx]
+        diff = ksmp[indx]*1.*tmp[indx]+(apsmp[indx])**tmp[indx]
         aismp[indx&(diff>=0)] = diff[indx&(diff>=0)]**(1./tmp[indx&(diff>=0)])
         aismp[indx&(diff<0)] = acrit + 1e-3
         aismp[aismp>acrit] = acrit + 1e-3
@@ -88,7 +88,7 @@ if __name__ == '__main__':
             def ai(kappa=kappa, m=m, ap=aarray[i-1]):
                 # aiout = ap+1e3*kappa*(ap*1e-3)**(m/2.)
                 if m==2:
-                    aiout = ap*np.exp(kappa*life)
+                    aiout = ap*np.exp(kappa*1.)
                 else:
                     tmp = 1.0-m/2.
                     diff = kappa*1.*tmp+ap**tmp
