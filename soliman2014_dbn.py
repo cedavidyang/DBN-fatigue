@@ -108,9 +108,10 @@ if __name__ == '__main__':
         ailb = np.percentile(aismp_prior[aismp_prior<acrit], 0.1)
         aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99)
         if ailb>0:
-            aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-1)))
+            aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
         else:
-            aibins = np.linspace(0., aiub, ainum)
+            aibins = np.linspace(0., aiub, ainum-1)
+        aiedges = np.hstack((aiedges,acrit+1e-3))
         ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aibins)
         minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aibins)
         nstate = ainum
