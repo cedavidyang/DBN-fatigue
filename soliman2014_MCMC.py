@@ -10,15 +10,15 @@ if __name__ == '__main__':
     G = 1.12
     lmd = 0.122; beta = -0.305    # w.r.t. mm
     sigmae = 0.2    # mm
-    acrit = 5.
+    acrit = 30.
     life=5; lifearray = np.arange(life)+1.
     # random variables
     a0mean,a0std = 0.5, 0.5*0.1
     rv_a0 = stats.norm(a0mean,a0std)
-    mmean,mstd = 3.0, 3.0*0.1
+    mmean,mstd = 3.0, 3.0*0.05
     rv_m = stats.norm(mmean, mstd)
-    # [logCmean, logCstd] = lognstats(2.3e-12, 0.3*2.3e-12)
-    [logCmean, logCstd] = lognstats(4.5e-13, 0.3*4.5e-13)
+    [logCmean, logCstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    # [logCmean, logCstd] = lognstats(4.5e-13, 0.3*4.5e-13)
     rv_C = stats.lognorm(logCstd, scale=np.exp(logCmean))
     [wblscale, wblc] = wblstats(22.5, 0.1*22.5)
     rv_Sre = stats.weibull_min(wblc, scale=wblscale)
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     def make_pymc_model():
         # data
         madata = np.empty(life, dtype=object)
-        madata[2] = 2.0
+        madata[2] = 15.0
 
         # parameters
         cs = pymc.Normal('CS', mu=0., tau=1., plot=False)

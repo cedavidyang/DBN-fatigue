@@ -21,13 +21,13 @@ if __name__ == '__main__':
     G = 1.12
     lmd = 0.122; beta = -0.305    # w.r.t. mm
     sigmae = 0.2    # mm
-    acrit = 5.
+    acrit = 30.
     life=5; lifearray = np.arange(life)+1.
     # random variables
     rv_a0 = stats.norm(0.5, 0.5*0.1)
-    rv_m = stats.norm(3.0, 3.0*0.1)
-    # [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
-    [logmean, logstd] = lognstats(4.5e-13, 0.3*4.5e-13)
+    rv_m = stats.norm(3.0, 3.0*0.05)
+    [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    # [logmean, logstd] = lognstats(4.5e-13, 0.3*4.5e-13)
     rv_C = stats.lognorm(logstd, scale=np.exp(logmean))
     [wblscale, wblc] = wblstats(22.5, 0.1*22.5)
     rv_Sre = stats.weibull_min(wblc, scale=wblscale)
@@ -106,12 +106,12 @@ if __name__ == '__main__':
         minum = 20+2
         aismp_prior = aismp_mc(nsmp, 1., aismp_prior, rv_C, rv_Sre, G, rv_m, rv_Na, acrit)
         ailb = np.percentile(aismp_prior[aismp_prior<acrit], 0.1)
-        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99)
+        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99.9)
         if ailb>0:
             aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
         else:
             aibins = np.linspace(0., aiub, ainum-1)
-        aiedges = np.hstack((aiedges,acrit+1e-3))
+        aibins = np.hstack((aibins,acrit+1e-3))
         ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aibins)
         minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aibins)
         nstate = ainum

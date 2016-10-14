@@ -16,7 +16,7 @@ from soliman2014_funcs import ksmp_mc, aismp_mc, msr2k, mc2k, mc2ai
 
 # parameters
 trunclmd = 100.
-acrit = 5.
+acrit = 30.
 nsmp = int(1e6)
 G = 1.12
 lmd1 = -0.968; beta1 = -0.571    # w.r.t. mm
@@ -140,9 +140,9 @@ def inspection_utility(pstate):
 if __name__ == '__main__':
     # random variables
     rv_a0 = stats.norm(0.5, 0.5*0.1)
-    rv_m = stats.norm(3.0, 3.0*0.1)
-    # [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
-    [logmean, logstd] = lognstats(4.5e-13, 0.3*4.5e-13)
+    rv_m = stats.norm(3.0, 3.0*0.05)
+    [logmean, logstd] = lognstats(2.3e-12, 0.3*2.3e-12)
+    # [logmean, logstd] = lognstats(4.5e-13, 0.3*4.5e-13)
     rv_C = stats.lognorm(logstd, scale=np.exp(logmean))
     [wblscale, wblc] = wblstats(22.5, 0.1*22.5)
     rv_Sre = stats.weibull_min(wblc, scale=wblscale)
