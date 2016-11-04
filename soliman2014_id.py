@@ -156,19 +156,19 @@ if __name__ == '__main__':
     node_a0 = Node('a0', parents=None, rvname='normal', rv=rv_a0)
     # discretize continuous rv
     # node a0
-    a0num = 5+2
+    a0num = 7+2
     mu,var = rv_a0.stats(); sigma = np.sqrt(var)
     lb = mu-3.*sigma; ub = mu+3.*sigma
     a0bins = np.linspace(lb, ub, a0num-1)
     a0names = node_a0.discretize(lb, ub, a0num, infinity='+-', bins=a0bins)
     # node m
-    mnum = 5+2
+    mnum = 7+2
     mu,var = rv_m.stats(); sigma = np.sqrt(var)
     lb = mu-3.*sigma; ub = mu+3.*sigma
     mbins = np.linspace(lb, ub, mnum-1)
     mnames = node_m.discretize(lb, ub, mnum, infinity='+-', bins=mbins)
     # node k
-    knum = 5+1
+    knum = 7+1
     ksmp_prior,msmp_prior = ksmp_mc(nsmp, rv_C, rv_Sre, G, rv_m, rv_Na)
     klb = np.percentile(ksmp_prior, 5)
     kub = np.percentile(ksmp_prior, 95)
@@ -212,11 +212,11 @@ if __name__ == '__main__':
     urarray = []     # utility of repair
     aismp_prior = rv_a0.rvs(size=int(nsmp))
     for ia,rp in enumerate(inspyear):
-        ainum = 5+1
-        minum = 5+2
+        ainum = 7+1
+        minum = 7+2
         aismp_prior = aismp_mc(nsmp, 1., aismp_prior, rv_C, rv_Sre, G, rv_m, rv_Na, acrit)
         ailb = np.percentile(aismp_prior[aismp_prior<acrit], 0.1)
-        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99.9)
+        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 95)
         if ailb>0:
             aiedges = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
         else:
