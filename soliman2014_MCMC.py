@@ -109,7 +109,8 @@ if __name__ == '__main__':
             mivalue = madata[i-1]
             if mivalue is None:
                 obsvalue = False
-                mivalue = a0mean
+                # mivalue = a0mean
+                mivalue = np.median(asmparray[i])
             else:
                 obsvalue = True
             @pymc.stochastic(name='M{}'.format(i), plot=False, dtype=float, observed=obsvalue)
