@@ -13,16 +13,18 @@ from pyNetica import Node,Network
 from soliman2014_funcs import lognstats, wblstats
 from soliman2014_funcs import ksmp_mc, aismp_mc, msr2k, mc2k, mc2ai
 
+# parameters
 trunclmd = 100.
+acrit = 30.
+nsmp = int(1e6)
+G = 1.12
+lmd1 = -0.968; beta1 = -0.571    # w.r.t. mm
+lmd2 = 0.122; beta2 = -0.305    # w.r.t. mm
+lmd3 = 0.829; beta3 = -0.423    # w.r.t. mm
+sigmae = 0.2    # mm
+life=5; lifearray = np.arange(life)+1.
 
 if __name__ == '__main__':
-    # parameters
-    nsmp = 1e6
-    G = 1.12
-    lmd = 0.122; beta = -0.305    # w.r.t. mm
-    sigmae = 0.2    # mm
-    acrit = 30.
-    life=5; lifearray = np.arange(life)+1.
     # random variables
     rv_a0 = stats.norm(0.5, 0.5*0.1)
     rv_m = stats.norm(3.0, 3.0*0.05)
@@ -90,8 +92,6 @@ if __name__ == '__main__':
             truncrvs.append(node_k.parents[j].truncate_rv(pstate,lmd=trunclmd))
         rvnames = ['M', 'C', 'Sre', 'Na']
         rvs = truncrvs+[rv_C, rv_Sre, rv_Na]
-        # rvnames = ['M', 'C', 'Sre', 'Na']
-        # rvs = [rv_m, rv_C, rv_Sre, rv_Na]
         probs = mc2k(rvnames, rvs, node_k.bins, G, nsmp)
         probs = probs/np.sum(probs,dtype=float)
         print 'labels: {}, progress: {}%, pmf: {}'.format(label,
@@ -106,16 +106,15 @@ if __name__ == '__main__':
         minum = 20+2
         aismp_prior = aismp_mc(nsmp, 1., aismp_prior, rv_C, rv_Sre, G, rv_m, rv_Na, acrit)
         ailb = np.percentile(aismp_prior[aismp_prior<acrit], 0.1)
-        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 99.9)
+        aiub = np.percentile(aismp_prior[aismp_prior<acrit], 95)
         if ailb>0:
-            aibins = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
+            aiedges = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
         else:
-            aibins = np.linspace(0., aiub, ainum-1)
-        aibins = np.hstack((aibins,acrit+1e-3))
-        ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aibins)
-        minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aibins)
+            aiedges = np.linspace(0., aiub, ainum-1)
+        aiedges = np.hstack((aiedges,acrit+1e-3))
+        ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aiedges)
+        minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aiedges)
         nstate = ainum
-        # ai = Node("A"+str(i+1), parents=[aarray[-1], node_k, node_m], rvname='continuous')
         labels = itertools.product(np.arange(node_ap.nstates()), np.arange(knum),np.arange(mnum))
         labels = [label for label in labels]
         for i,label in enumerate(labels):
@@ -147,7 +146,7 @@ if __name__ == '__main__':
             rvs = truncrvs
             aimean = rvs[0].stats('m')[()]
             rv_am = stats.norm(aimean, sigmae)
-            pod = 1.-stats.norm.cdf((np.log(aimean)-lmd)/beta)
+            pod = 1.-stats.norm.cdf((np.log(aimean)-lmd2)/beta2)
             probs = rv_am.cdf(node_mi.bins[1:])-rv_am.cdf(node_mi.bins[:-1])
             print 'labels: {}, progress: {}%, prob: {}'.format(label,
                 float(i)/len(labels)*100, np.array_str(probs,precision=3))
