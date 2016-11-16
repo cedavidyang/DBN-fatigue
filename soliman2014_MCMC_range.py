@@ -139,10 +139,10 @@ if __name__ == '__main__':
         return locals()
 
     M = pymc.MCMC(make_pymc_model(), db='pickle', dbname='soliman_pymc.pickle')
-    graph = pymc.graph.graph(M)
-    graph.write_png('soliman2014_pymc.png')
-    import os
-    os.system('eog soliman2014_pymc.png')
+    # graph = pymc.graph.graph(M)
+    # graph.write_png('soliman2014_pymc.png')
+    # import os
+    # os.system('eog soliman2014_pymc.png')
 
     nchain=4; niter=int(1e6); nburn=niter/2; nthin=2
     for i in range(nchain):
