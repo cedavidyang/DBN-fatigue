@@ -115,7 +115,7 @@ if __name__ == '__main__':
                 mledge = 3.47208
                 mredge = 4.13522
             obsvalue = True
-            @pymc.stochastic(name='M{}'.format(i), plot=False, dtype=float, observed=obsvalue)
+            @pymc.stochastic(name='M{}'.format(i), plot=False, dtype=int, observed=obsvalue)
             def Mi(value=mivalue, ai=aarray[i]):
                 def logp(value, ai):
                     pod = 1.-stats.norm.cdf((np.log(ai)-lmd)/beta)
