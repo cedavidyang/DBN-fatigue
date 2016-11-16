@@ -59,9 +59,7 @@ if __name__ == '__main__':
     # MCMC using pymc
     def make_pymc_model():
         # data
-        madata = np.empty(life, dtype=object)
-        madata[1] = 1.0
-        madata[3] = 1.0
+        madata = 1
 
         # parameters
         cs = pymc.Normal('CS', mu=0., tau=1., plot=False)
@@ -105,44 +103,39 @@ if __name__ == '__main__':
 
 
         # observable variable
-        Marray = np.empty(2, dtype=object)
-        for mindx,i in enumerate([2, 4]):
-            mivalue = madata[i-1]
-            if i == 2:
-                mledge = 0.50669
-                mredge = 0.58725
-            elif i==4:
-                mledge = 3.47208
-                mredge = 4.13522
+        mivalue = madata
+        if mivalue is None:
+            obsvalue = False
+            mivalue = 0
+        else:
             obsvalue = True
-            @pymc.stochastic(name='M{}'.format(i), plot=False, dtype=float, observed=obsvalue)
-            def Mi(value=mivalue, ai=aarray[i]):
-                def logp(value, ai):
-                    pod = 1.-stats.norm.cdf((np.log(ai)-lmd)/beta)
-                    pinrange = stats.norm.cdf(mredge, loc=ai, scale=sigmae)-\
-                            stats.norm.cdf(mledge, loc=ai, scale=sigmae)
-                    if value == 0:
-                        p = (1.-pod)+pod*(1.-pinrange)
-                        return np.log(p)
-                    else:
-                        return np.log(pod*pinrange)
-                def random(ai):
-                    pod = 1.-stats.norm.cdf((np.log(ai)-lmd)/beta)
-                    pinrange = stats.norm.cdf(mredge, loc=ai, scale=sigmae)-\
-                            stats.norm.cdf(mledge, loc=ai, scale=sigmae)
-                    if np.random.rand()<=pod:
-                        return stats.bernoulli.rvs(p=pinrange,size=1)
-                    else:
-                        return 0
-            Marray[mindx] = Mi
+        @pymc.stochastic(name='M{}'.format(i), plot=False, dtype=float, observed=obsvalue)
+        def Mi(value=mivalue, ai=aarray[3]):
+            def logp(value, ai):
+                pod = 1.-stats.norm.cdf((np.log(ai)-lmd)/beta)
+                pinrange = stats.norm.cdf(2.0619, loc=ai, scale=sigmae)-\
+                        stats.norm.cdf(1.8243, loc=ai, scale=sigmae)
+                if value == 0:
+                    p = (1.-pod)+pod*(1.-pinrange)
+                    return np.log(p)
+                else:
+                    return np.log(pod*pinrange)
+            def random(ai):
+                pod = 1.-stats.norm.cdf((np.log(ai)-lmd)/beta)
+                pinrange = stats.norm.cdf(2.0619, loc=ai, scale=sigmae)-\
+                        stats.norm.cdf(1.8243, loc=ai, scale=sigmae)
+                if np.random.rand()<=pod:
+                    return stats.bernoulli.rvs(p=pinrange,size=1)
+                else:
+                    return 0
 
         return locals()
 
     M = pymc.MCMC(make_pymc_model(), db='pickle', dbname='soliman_pymc.pickle')
-    graph = pymc.graph.graph(M)
-    graph.write_png('soliman2014_pymc.png')
-    import os
-    os.system('eog soliman2014_pymc.png')
+    # graph = pymc.graph.graph(M)
+    # graph.write_png('soliman2014_pymc.png')
+    # import os
+    # os.system('eog soliman2014_pymc.png')
 
     nchain=4; niter=int(1e6); nburn=niter/2; nthin=2
     for i in range(nchain):
