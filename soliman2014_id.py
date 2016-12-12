@@ -40,6 +40,7 @@ def create_node_a(name, parents, ainum, ailb, aiub, aiedges, node_repair=None, a
     mnum = parents[2].nstates()
     ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aiedges)
     aibins = node_ai.bins
+    import ipdb; ipdb.set_trace() # BREAKPOINT
     if node_repair is None:
         labels = itertools.product(np.arange(node_ap.nstates()), np.arange(knum),np.arange(mnum))
     else:
@@ -221,7 +222,7 @@ if __name__ == '__main__':
             aiedges = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
         else:
             aiedges = np.linspace(0., aiub, ainum-1.)
-        aiedges = np.hstack((aiedges,acrit+1e-3))
+        aiedges = np.hstack((aiedges,acrit))
         if ia == 0:
             node_ai = create_node_a("A"+str(ia+1), [aarray[-1], node_k, node_m], ainum, ailb, aiub, aiedges)
             aarray.append(node_ai)
@@ -252,7 +253,7 @@ if __name__ == '__main__':
             node_ur.set_node_kind(UTILITY_NODE)
             def repair_utility(pstate, node_ai=node_ai):
                 repairstate, aistate = pstate
-                acrstate = np.searchsorted(node_ai.bins, acrit)-1
+                acrstate = np.searchsorted(node_ai.bins, acrit+1e-10)-1
                 truncrv_ai = node_ai.truncate_rv(aistate, lmd=trunclmd)
                 if aistate<acrstate and repairstate == 0:
                     utilr = 0.
@@ -261,6 +262,9 @@ if __name__ == '__main__':
                 elif aistate>acrstate and repairstate == 0:
                     utilr = 0.
                 elif aistate>acrstate and repairstate == 1:
+                    # this value does not matter anymore, as the current
+                    # decretization method of Ai indicates this condition
+                    # (aistate>acrstate) is not possible to occur.
                     utilr = -Cfail
                 elif aistate == acrstate and repairstate == 0:
                     utilr = 0.
@@ -286,7 +290,7 @@ if __name__ == '__main__':
     node_fr.set_node_kind(UTILITY_NODE)
     def failure_risk(pstate, node_al=node_al):
         aistate = pstate
-        acrstate = np.searchsorted(node_al.bins, acrit)-1
+        acrstate = np.searchsorted(node_al.bins, acrit+1e-10)-1
         truncrv_ai = node_ai.truncate_rv(aistate, lmd=trunclmd)
         if aistate<acrstate:
             utilr = 0.

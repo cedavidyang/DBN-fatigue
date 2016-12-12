@@ -47,8 +47,8 @@ if __name__ == '__main__':
         indx = msmp!=2
         diff = ksmp[indx]*1.*tmp[indx]+(apsmp[indx])**tmp[indx]
         aismp[indx&(diff>=0)] = diff[indx&(diff>=0)]**(1./tmp[indx&(diff>=0)])
-        aismp[indx&(diff<0)] = acrit + 1e-3
-        aismp[aismp>acrit] = acrit + 1e-3
+        aismp[indx&(diff<0)] = acrit
+        aismp[aismp>acrit] = acrit
         asmparray.append(aismp)
     # failure probability
     pfarray = []
@@ -95,9 +95,9 @@ if __name__ == '__main__':
                     if diff>=0:
                         aiout = diff**(1./tmp)
                     else:
-                        aiout = acrit + 1e-3
+                        aiout = acrit
                     if aiout>acrit:
-                        aiout = acrit + 1e-3
+                        aiout = acrit
                 return aiout
             aarray[i] = ai
 

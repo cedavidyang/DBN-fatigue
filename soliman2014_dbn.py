@@ -111,7 +111,7 @@ if __name__ == '__main__':
             aiedges = np.hstack((0., np.linspace(ailb, aiub, ainum-2)))
         else:
             aiedges = np.linspace(0., aiub, ainum-1)
-        aiedges = np.hstack((aiedges,acrit+1e-3))
+        aiedges = np.hstack((aiedges,acrit))
         ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aiedges)
         minames = node_mi.discretize(ailb, aiub, minum, infinity='+-', bins=aiedges)
         nstate = ainum
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     pfarray = []
     for ai in aarray:
         beliefs = dbnet.get_node_beliefs(ai)
-        aistate = np.searchsorted(ai.bins, acrit)-1
+        aistate = np.searchsorted(ai.bins, acrit+1e-10)-1
         aitruncrv = ai.truncate_rv(aistate,lmd=trunclmd)
         lt = np.sum(beliefs[:aistate])+beliefs[aistate]*aitruncrv.cdf(acrit)
         pfarray.append(1-lt)

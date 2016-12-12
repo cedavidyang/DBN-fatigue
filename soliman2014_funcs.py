@@ -80,8 +80,8 @@ def aismp_mc(nsmp, life, a0smp, C, Sre, G, m, Na, acrit):
     indx = msmp!=2
     diff = ksmp[indx]*life*tmp[indx]+(a0smp[indx])**tmp[indx]
     aismp[indx&(diff>=0)] = diff[indx&(diff>=0)]**(1./tmp[indx&(diff>=0)])
-    aismp[indx&(diff<0)] = acrit + 1e-3
-    aismp[aismp>acrit] = acrit + 1e-3
+    aismp[indx&(diff<0)] = acrit
+    aismp[aismp>acrit] = acrit
     return aismp
 
 
@@ -186,8 +186,8 @@ def mc2ai(rvnames, rvs, bins, acrit, nsmp=1e6):
     indx = msmp!=2
     diff = ksmp[indx]*life*tmp[indx]+(apsmp[indx])**tmp[indx]
     aismp[indx&(diff>=0)] = diff[indx&(diff>=0)]**(1./tmp[indx&(diff>=0)])
-    aismp[indx&(diff<0)] = acrit + 1e-3
-    aismp[aismp>acrit] = acrit + 1e-3
+    aismp[indx&(diff<0)] = acrit
+    aismp[aismp>acrit] = acrit
     binnum, bins = np.histogram(aismp, bins)
     probs = binnum/np.sum(binnum,dtype=float)
     return probs, {'aismp':aismp, 'apsmp':apsmp, 'ksmp':ksmp, 'msmp':msmp}
