@@ -254,7 +254,6 @@ if __name__ == '__main__':
             def repair_utility(pstate, node_ai=node_ai):
                 repairstate, aistate = pstate
                 acrstate = np.searchsorted(node_ai.bins, acrit+1e-10)-1
-                import ipdb; ipdb.set_trace() # BREAKPOINT
                 truncrv_ai = node_ai.truncate_rv(aistate, lmd=trunclmd)
                 if aistate<acrstate and repairstate == 0:
                     utilr = 0.
