@@ -40,7 +40,6 @@ def create_node_a(name, parents, ainum, ailb, aiub, aiedges, node_repair=None, a
     mnum = parents[2].nstates()
     ainames = node_ai.discretize(ailb, aiub, ainum, infinity='+', bins=aiedges)
     aibins = node_ai.bins
-    import ipdb; ipdb.set_trace() # BREAKPOINT
     if node_repair is None:
         labels = itertools.product(np.arange(node_ap.nstates()), np.arange(knum),np.arange(mnum))
     else:
