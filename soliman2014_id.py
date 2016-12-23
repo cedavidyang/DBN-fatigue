@@ -134,7 +134,7 @@ def inspection_utility(pstate):
     if pstate==0:
         return 0.
     else:
-        return -(6.0-pstate)
+        return -(6.0-pstate)/(1+0.02)**6
 
 
 if __name__ == '__main__':
@@ -288,7 +288,7 @@ if __name__ == '__main__':
     node_fr = Node("Failure_Risk"+str(ia+1), parents=[node_al], rvname='deterministic')
     node_fr.set_node_kind(UTILITY_NODE)
     def failure_risk(pstate, node_al=node_al):
-        aistate = pstate
+        aistate, = pstate
         acrstate = np.searchsorted(node_al.bins, acrit+1e-10)-1
         truncrv_ai = node_ai.truncate_rv(aistate, lmd=trunclmd)
         if aistate<acrstate:
