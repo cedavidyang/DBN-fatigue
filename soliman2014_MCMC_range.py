@@ -60,8 +60,8 @@ if __name__ == '__main__':
     def make_pymc_model():
         # data
         madata = np.empty(life, dtype=object)
-        madata[1] = 1.0
-        madata[3] = 1.0
+        madata[1] = 0.0
+        madata[2] = 1.0
 
         # parameters
         cs = pymc.Normal('CS', mu=0., tau=1., plot=False)
@@ -106,14 +106,14 @@ if __name__ == '__main__':
 
         # observable variable
         Marray = np.empty(2, dtype=object)
-        for mindx,i in enumerate([2, 4]):
+        for mindx,i in enumerate([2, 3]):
             mivalue = madata[i-1]
             if i == 2:
                 mledge = 0.50669
                 mredge = 0.58725
-            elif i==4:
-                mledge = 3.47208
-                mredge = 4.13522
+            elif i==3:
+                mledge = 1.58364
+                mredge = 1.82072
             obsvalue = True
             @pymc.stochastic(name='M{}'.format(i), plot=False, dtype=int, observed=obsvalue)
             def Mi(value=mivalue, ai=aarray[i]):
